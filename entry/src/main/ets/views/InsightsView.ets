@@ -4,6 +4,7 @@ import { moodInfo } from '../core/Mood';
 import { GROUPS } from '../core/Types';
 import { MetricBar, Reveal, SectionLabel, Tile } from '../ui/Kit';
 import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
+import { motionOn } from '../ui/Motion';
 
 const GROUP_NAMES: string[] = ['Legs', 'Push', 'Pull', 'Core'];
 
@@ -86,7 +87,7 @@ export struct InsightsView {
           Progress({ value: Math.round(this.pct(this.reason(key)) * 100), total: 100, type: ProgressType.Linear })
             .color(this.reason(key).ok ? TEXT : ACCENT)
             .backgroundColor(TRACK)
-            .style({ strokeWidth: 6, strokeRadius: 3, enableSmoothEffect: true })
+            .style({ strokeWidth: 6, strokeRadius: 3, enableSmoothEffect: motionOn() })
             .width('100%')
             .margin({ top: 14 })
         }

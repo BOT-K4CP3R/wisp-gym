@@ -8,6 +8,7 @@ import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, EmptyState, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
 import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
+import { anim, press } from '../ui/Motion';
 
 const DAY_LETTERS: string[] = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -285,7 +286,7 @@ export struct ProgressView {
                     .height(Math.max(4, Math.round(96 * b.reps / this.maxReps())))
                     .borderRadius(6)
                     .backgroundColor(b.reps > 0 ? (b.today ? ACCENT : '#B8623F') : TRACK)
-                    .animation({ duration: 500, curve: Curve.Friction, delay: idx * 40 })
+                    .animation(anim({ duration: 500, curve: Curve.Friction, delay: idx * 40 }))
                   Text(b.label)
                     .fontSize(11)
                     .fontFamily(F_BOLD)
@@ -386,7 +387,7 @@ export struct ProgressView {
                   Divider().color('#1FFFFFFF').strokeWidth(1).margin({ left: 14, right: 14 })
                 }
               }
-              .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.98 })
+              .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
               .onClick(() => this.openDetail(row))
             }, (row: SessionRow) => row.key)
           }

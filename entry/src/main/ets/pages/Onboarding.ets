@@ -6,10 +6,11 @@ import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, Chip, IconButton } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
-import { RouteParams } from '../ui/Nav';
+import { RouteParams, navReplace } from '../ui/Nav';
 import {
   ACCENT, ACCENT_TINT, BG, DUR_MED, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
 } from '../ui/Theme';
+import { anim, fx, press } from '../ui/Motion';
 
 const STEP_FX: TransitionEffect = TransitionEffect.asymmetric(
   TransitionEffect.OPACITY.combine(TransitionEffect.translate({ x: 36 })),
@@ -89,7 +90,7 @@ struct Onboarding {
 
   private go(next: number): void {
     const n = Math.max(0, Math.min(this.steps.length - 1, next));
-    this.getUIContext().animateTo({ duration: DUR_MED, curve: Curve.Friction }, () => {
+    this.getUIContext().animateTo(anim({ duration: DUR_MED, curve: Curve.Friction }), () => {
       this.step = n;
     });
     const look = this.holder.look;
@@ -144,7 +145,7 @@ struct Onboarding {
     } else {
       model.setDemo(false);
     }
-    router.replaceUrl({ url: 'pages/Index' });
+    navReplace(this.getUIContext(), 'pages/Index');
   }
 
   private primaryLabel(): string {
@@ -236,8 +237,8 @@ struct Onboarding {
     .borderRadius(22)
     .backgroundColor(this.useDemo === demo ? ACCENT_TINT : SURFACE)
     .border({ width: 1, color: this.useDemo === demo ? '#66FF8A5B' : HAIRLINE })
-    .animation({ duration: 180, curve: Curve.EaseOut })
-    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.97 })
+    .animation(anim({ duration: 180, curve: Curve.EaseOut }))
+    .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.97 }))
     .accessibilityText(title + (this.useDemo === demo ? ', selected' : ''))
     .onClick(() => {
       this.useDemo = demo;
@@ -253,7 +254,7 @@ struct Onboarding {
         this.Title('Meet ' + (this.replay ? this.name : 'Wisp'),
           'A little creature that grows from your real training. Your phone counts the reps, you do the work.')
       }
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'how') {
       Column({ space: 28 }) {
         this.Title('How it works', '')
@@ -265,7 +266,7 @@ struct Onboarding {
           'Train hard and it asks for a rest day. It is never sad and there are no streaks to lose.'))
       }
       .padding({ top: 24 })
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'name') {
       Column({ space: 18 }) {
         CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 170, tappable: true })
@@ -302,7 +303,7 @@ struct Onboarding {
         }
         .width('100%')
       }
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'goals') {
       Column({ space: 24 }) {
         this.Title('Set a gentle goal', 'Small and steady wins. Rest days never break anything.')
@@ -337,7 +338,7 @@ struct Onboarding {
           .width('100%')
       }
       .padding({ top: 24 })
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'permissions') {
       Column({ space: 28 }) {
         this.Title('Two small permissions', 'Both are optional. Wisp Gym works without them.')
@@ -347,7 +348,7 @@ struct Onboarding {
           'A buzz and a notification when your rest between sets is over.'))
       }
       .padding({ top: 24 })
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'mode') {
       Column({ space: 14 }) {
         this.Title('How do you want to start?', '')
@@ -363,14 +364,14 @@ struct Onboarding {
           .margin({ top: 4 })
       }
       .padding({ top: 24 })
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     } else {
       Column({ space: 8 }) {
         CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 290, tappable: true })
         this.Title('Say hi to ' + sanitizeName(this.name),
           'Your first set makes ' + sanitizeName(this.name) + ' grow. Tap it any time to say hi.')
       }
-      .transition(STEP_FX)
+      .transition(fx(STEP_FX))
     }
   }
 
@@ -390,7 +391,7 @@ struct Onboarding {
               .layoutWeight(1)
               .borderRadius(2)
               .backgroundColor(i <= this.step ? ACCENT : TRACK)
-              .animation({ duration: DUR_MED, curve: Curve.Friction })
+              .animation(anim({ duration: DUR_MED, curve: Curve.Friction }))
           }, (s: string) => s)
         }
         .layoutWeight(1)

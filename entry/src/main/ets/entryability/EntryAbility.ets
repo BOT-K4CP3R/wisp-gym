@@ -17,6 +17,7 @@ export default class EntryAbility extends UIAbility {
     }
     AppModel.get().init(this.context);
     AppModel.get().attachUiContext(this.context);
+    AppModel.get().applyMotion();
     this.route(want);
   }
 

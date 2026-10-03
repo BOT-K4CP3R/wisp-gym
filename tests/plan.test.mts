@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { LifeEngine, LifeConfig } from '../.test-build/core/LifeEngine.ts';
 import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup } from '../.test-build/core/Plan.ts';
 import { moodInfo, MOODS } from '../.test-build/core/Mood.ts';
-import { Profile, ProfileStore, sanitizeName } from '../.test-build/core/Profile.ts';
+import { Profile, ProfileStore, sanitizeName, reducedMotion } from '../.test-build/core/Profile.ts';
 import { MemoryStore } from '../.test-build/core/Store.ts';
 import { WorkoutSession, SessionConfig } from '../.test-build/core/WorkoutSession.ts';
 import { generateSet, TraceOptions } from '../.test-build/core/Sim.ts';
@@ -158,4 +158,32 @@ test('session: rest can be extended, shortened and skipped', () => {
   ses.skipRest();
   assert.equal(ses.phase(), 'idle');
   assert.equal(ses.sets().length, 1);
+});
+
+test('session: switching to the simulated stream flags the visit and later sets', () => {
+  const o = new TraceOptions();
+  o.reps = 4;
+  const ses = new WorkoutSession(0, false, new SessionConfig());
+  ses.markSimulated();
+  ses.startSet('press', 0);
+  let last = 0;
+  for (const s of generateSet(o)) { ses.onSample(s); last = s.t; }
+  ses.endSet(last);
+  const rec = ses.finish(last + 1000);
+  assert.equal(rec.simulated, true);
+  assert.equal(rec.sets[0].simulated, true);
+});
+
+test('profile: motion mode is validated and auto follows the renderer', () => {
+  const kv = new MemoryStore();
+  const store = new ProfileStore(kv);
+  assert.equal(store.load().motion, 'auto');
+  kv.put('profile.v1', JSON.stringify({ motion: 'wild' }));
+  assert.equal(store.load().motion, 'auto');
+  const p = new Profile(); p.motion = 'reduced'; store.save(p);
+  assert.equal(store.load().motion, 'reduced');
+  assert.equal(reducedMotion('auto', true), true);
+  assert.equal(reducedMotion('auto', false), false);
+  assert.equal(reducedMotion('full', true), false);
+  assert.equal(reducedMotion('reduced', false), true);
 });

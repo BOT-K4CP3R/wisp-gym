@@ -9,6 +9,7 @@ import { ActivityDots, Button56, IconButton, MetricBar, Reveal, RingNumber, Tag,
 import {
   ACCENT, ACCENT_TINT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
 } from '../ui/Theme';
+import { motionOn } from '../ui/Motion';
 
 const GROUP_NAMES: string[] = ['Legs', 'Push', 'Pull', 'Core'];
 const WEEK_LETTERS: string[] = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -242,7 +243,7 @@ export struct HomeView {
         .width('100%')
         .color(this.state.restRequested || this.state.recover < 0.25 ? ACCENT : TEXT)
         .backgroundColor(TRACK)
-        .style({ strokeWidth: 6, strokeRadius: 3, enableSmoothEffect: true })
+        .style({ strokeWidth: 6, strokeRadius: 3, enableSmoothEffect: motionOn() })
         .margin({ top: 14 })
     }
   }

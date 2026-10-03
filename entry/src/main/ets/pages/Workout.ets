@@ -4,7 +4,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppModel } from '../app/AppModel';
 import { Button56, IconButton, Tag } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
-import { RouteParams } from '../ui/Nav';
+import { RouteParams, navReplace } from '../ui/Nav';
 import {
   ACCENT, ACCENT_TINT, BG, DUR_FAST, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM,
   TEXT_MUTE, TRACK
@@ -14,6 +14,7 @@ import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
 import { TraceOptions } from '../core/Sim';
 import { MotionSource, RealAccelSource, SimulatedSource } from '../platform/MotionSource';
+import { anim, fx, motionOn, press, pageDur } from '../ui/Motion';
 
 const TAG = 'WispSet';
 const COUNTDOWN_MS = 3000;
@@ -64,6 +65,7 @@ struct Workout {
   @State demo: boolean = false;
   @State scenario: string = 'fatigue';
   @State sensorOk: boolean = true;
+  @State noData: boolean = false;       // sensor registered but silent (e.g. an emulator)
   @State repScale: number = 1;
   @State showPicker: boolean = false;
   @State showConfirm: boolean = false;
@@ -78,6 +80,8 @@ struct Workout {
   private countdownEnd: number = 0;
   private cueFatigue: number = new AnalyzerConfig().stopFatigue;
   private leaving: boolean = false;
+  private setStartedAt: number = 0;
+  private gotSample: boolean = false;
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
@@ -119,9 +123,9 @@ struct Workout {
   }
 
   pageTransition() {
-    PageTransitionEnter({ type: RouteType.Push, duration: 380, curve: Curve.Friction })
+    PageTransitionEnter({ type: RouteType.Push, duration: pageDur(380), curve: Curve.Friction })
       .slide(SlideEffect.Bottom)
-    PageTransitionExit({ type: RouteType.Pop, duration: 300, curve: Curve.Friction })
+    PageTransitionExit({ type: RouteType.Pop, duration: pageDur(300), curve: Curve.Friction })
       .slide(SlideEffect.Bottom)
   }
 
@@ -172,11 +176,14 @@ struct Workout {
     AppModel.get().tick(25);
   }
 
+  // Timer-driven emphasis uses implicit animations (.animation on the element) plus a
+  // timeout. animateTo from a timer stalled all JS timers on the OpenHarmony 6.1 emulator
+  // whenever the render service was late with the finish callback.
   private bumpCount(): void {
-    this.countScale = 1.5;
-    this.getUIContext().animateTo({ duration: 420, curve: Curve.Friction }, () => {
+    this.countScale = 1.35;
+    setTimeout(() => {
       this.countScale = 1;
-    });
+    }, 140);
   }
 
   private cancelCountdown(): void {
@@ -192,6 +199,9 @@ struct Workout {
     this.fatigue = 0;
     this.restNotified = false;
     this.haveOffset = false;
+    this.noData = false;
+    this.gotSample = false;
+    this.setStartedAt = Date.now();
     hilog.info(0x00F1, TAG, 'startSet %{public}s demo=%{public}s', this.exerciseId, '' + this.demo);
     this.session.startSet(this.exerciseId, Date.now());
     this.phase = 'set';
@@ -207,6 +217,10 @@ struct Workout {
     if (this.session.phase() !== 'set') {
       return;
     }
+    if (!this.gotSample) {
+      this.gotSample = true;
+      this.noData = false;
+    }
     if (!this.haveOffset) {
       this.clockOffset = Date.now() - raw.t; // map sensor time onto the wall clock once
       this.haveOffset = true;
@@ -214,37 +228,32 @@ struct Workout {
     const s = new AccelSample(raw.t + this.clockOffset, raw.x, raw.y, raw.z);
     const u = this.session.onSample(s);
     if (u.newRep) {
+      this.noData = false;
       this.reps = u.reps;
       this.fatigue = u.fatigue;
       this.explanation = u.explanation;
       this.lastRep = u.intervalMs > 0 ? (u.intervalMs / 1000).toFixed(1) + ' s' : '-';
       this.repScale = 1.16;
-      this.getUIContext().animateTo({ duration: 260, curve: Curve.Friction }, () => {
+      setTimeout(() => {
         this.repScale = 1;
-      });
-      AppModel.get().tick(18);
+      }, 140);
+      if (!u.stopCue) {
+        AppModel.get().tick(18);
+      }
     }
     if (u.stopCue) {
       this.cue = true;
       this.emphasizeRing();
-      AppModel.get().tick(400);
+      AppModel.get().tick(400); // the stronger cue replaces the rep tick
     }
   }
 
-  // One-shot "pop" of the ring for the stop cue. (An infinite implicit animation here
-  // stalled the JS timers on the OpenHarmony 6.1 emulator, freezing the rep count.)
+  // One-shot "pop" of the ring for the stop cue.
   private emphasizeRing(): void {
-    this.getUIContext().animateTo({
-      duration: 180,
-      curve: Curve.EaseOut,
-      onFinish: () => {
-        this.getUIContext().animateTo({ duration: 420, curve: Curve.Friction }, () => {
-          this.ringScale = 1;
-        });
-      }
-    }, () => {
-      this.ringScale = 1.07;
-    });
+    this.ringScale = 1.07;
+    setTimeout(() => {
+      this.ringScale = 1;
+    }, 220);
   }
 
   private onTick(): void {
@@ -271,6 +280,11 @@ struct Workout {
     }
     const sp = this.session.phase();
     if (sp === 'set') {
+      // Silent sensor after 3 s, or no rep at all after 12 s: offer the simulated stream.
+      if (!this.noData && !this.demo && ((!this.gotSample && now - this.setStartedAt > 3000) ||
+        (this.reps === 0 && now - this.setStartedAt > 12000))) {
+        this.noData = true;
+      }
       const u = this.session.tick(now);
       if (u.autoEnded) {
         this.afterSetEnded();
@@ -343,7 +357,7 @@ struct Workout {
     const router = this.getUIContext().getRouter();
     if (rec.sets.length > 0) {
       AppModel.get().finishWorkout(rec);
-      router.replaceUrl({ url: 'pages/Summary' });
+      navReplace(this.getUIContext(), 'pages/Summary');
     } else {
       router.back();
     }
@@ -384,7 +398,7 @@ struct Workout {
       return Math.max(2, Math.min(100, Math.round(100 * this.fatigue / this.cueFatigue)));
     }
     if (this.phase === 'countdown') {
-      return 100;
+      return Math.round(100 * this.countdown / 3);
     }
     return 0;
   }
@@ -461,6 +475,28 @@ struct Workout {
     return this.sets === 0 ? 'Start set' : 'Start next set';
   }
 
+  // The motion sensor is silent: offer the simulated stream instead of waiting forever.
+  private switchToDemo(): void {
+    AppModel.get().setDemo(true);
+    this.demo = true;
+    this.session.markSimulated();
+    this.session.endSet(Date.now());
+    this.stopSource();
+    this.noData = false;
+    this.startSet();
+  }
+
+  private coachText(): string {
+    if (!this.sensorOk) {
+      return 'Motion sensor unavailable on this device. Turn on Demo mode in Settings.';
+    }
+    if (this.noData && this.phase === 'set') {
+      return this.gotSample ? 'No reps detected yet. Check the phone placement, or tap here to try Demo mode.' :
+        'No motion data from the sensor. Tap here to use Demo mode instead.';
+    }
+    return this.hint();
+  }
+
   private onPrimary(): void {
     if (this.phase === 'countdown') {
       this.cancelCountdown();
@@ -501,7 +537,7 @@ struct Workout {
         .width('100%')
         .height(64)
         .border({ width: { bottom: 1 }, color: HAIRLINE })
-        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.98 })
+        .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
         .onClick(() => {
           this.exerciseId = ex.id;
           this.showPicker = false;
@@ -548,8 +584,9 @@ struct Workout {
         .height(this.ringSize())
         .color(this.ringColor())
         .backgroundColor(TRACK)
-        .style({ strokeWidth: 10, enableSmoothEffect: true })
+        .style({ strokeWidth: 10, enableSmoothEffect: motionOn() })
         .scale({ x: this.ringScale, y: this.ringScale })
+        .animation(anim({ duration: 220, curve: Curve.EaseOut }))
       Column() {
         Text(this.bigText())
           .fontSize(this.phase === 'rest' ? 60 : (this.phase === 'idle' && this.sets === 0 ? 64 : 84))
@@ -559,6 +596,7 @@ struct Workout {
             x: this.phase === 'countdown' ? this.countScale : this.repScale,
             y: this.phase === 'countdown' ? this.countScale : this.repScale
           })
+          .animation(anim({ duration: 160, curve: Curve.EaseOut }))
         Text(this.subLabel())
           .fontSize(14)
           .fontFamily(F_BOLD)
@@ -568,7 +606,7 @@ struct Workout {
     }
     .width(this.ringSize() + 12)
     .height(this.ringSize() + 12)
-    .animation({ duration: DUR_FAST * 2, curve: Curve.Friction })
+    .animation(anim({ duration: DUR_FAST * 2, curve: Curve.Friction }))
   }
 
   // The ring shrinks a little while resting so the rest controls fit on small screens.
@@ -588,7 +626,7 @@ struct Workout {
         .borderRadius(20)
         .backgroundColor(SURFACE_HI)
         .accessibilityText('Fifteen seconds less rest')
-        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.92 })
+        .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
         .onClick(() => this.adjustRest(-15000))
       Text('Skip')
         .fontSize(14)
@@ -599,7 +637,7 @@ struct Workout {
         .borderRadius(20)
         .backgroundColor(SURFACE_HI)
         .accessibilityText('Skip rest')
-        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.92 })
+        .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
         .onClick(() => this.skipRest())
       Text('+15 s')
         .fontSize(14)
@@ -610,11 +648,11 @@ struct Workout {
         .borderRadius(20)
         .backgroundColor(SURFACE_HI)
         .accessibilityText('Fifteen seconds more rest')
-        .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.92 })
+        .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
         .onClick(() => this.adjustRest(15000))
     }
     .margin({ top: 10 })
-    .transition(TransitionEffect.OPACITY.animation({ duration: DUR_FAST }))
+    .transition(fx(TransitionEffect.OPACITY.animation(anim({ duration: DUR_FAST }))))
   }
 
   @Builder
@@ -632,8 +670,8 @@ struct Workout {
             .fontColor(this.scenario === sc.id ? ON_ACCENT : TEXT_DIM)
             .backgroundColor(this.scenario === sc.id ? ACCENT : SURFACE)
             .border({ width: this.scenario === sc.id ? 0 : 1, color: HAIRLINE })
-            .animation({ duration: DUR_FAST })
-            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
+            .animation(anim({ duration: DUR_FAST }))
+            .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.94 }))
             .onClick(() => {
               this.scenario = sc.id;
             })
@@ -641,7 +679,7 @@ struct Workout {
       }
     }
     .margin({ top: 10 })
-    .transition(TransitionEffect.OPACITY.animation({ duration: DUR_FAST }))
+    .transition(fx(TransitionEffect.OPACITY.animation(anim({ duration: DUR_FAST }))))
   }
 
   build() {
@@ -667,7 +705,7 @@ struct Workout {
         .layoutWeight(1)
         .justifyContent(FlexAlign.Center)
         .accessibilityText('Exercise: ' + findExercise(this.exerciseId).name + '. Tap to change.')
-        .clickEffect(this.phase === 'set' || this.phase === 'countdown' ? null : { level: ClickEffectLevel.LIGHT, scale: 0.96 })
+        .clickEffect(this.phase === 'set' || this.phase === 'countdown' ? null : press({ level: ClickEffectLevel.LIGHT, scale: 0.96 }))
         .onClick(() => {
           if (this.phase !== 'set' && this.phase !== 'countdown') {
             this.showPicker = true;
@@ -705,24 +743,30 @@ struct Workout {
       // Coaching line (fatigue explanation, placement, rest)
       Column() {
         Row({ space: 10 }) {
-          Image(this.cue ? $r('app.media.ic_bolt_accent') : $r('app.media.ic_phone'))
+          Image(this.cue && this.phase === 'set' ? $r('app.media.ic_bolt_accent') :
+            (this.phase === 'rest' ? $r('app.media.ic_moon') : $r('app.media.ic_phone')))
             .width(20)
             .height(20)
-            .opacity(this.cue ? 1 : 0.6)
-          Text(this.sensorOk ? this.hint() : 'Motion sensor unavailable on this device. Turn on Demo mode in Settings.')
+            .opacity(this.cue && this.phase === 'set' ? 1 : 0.6)
+          Text(this.coachText())
             .fontSize(13)
             .fontFamily(F_REG)
-            .fontColor(this.cue ? TEXT : TEXT_DIM)
+            .fontColor(this.cue && this.phase === 'set' ? TEXT : TEXT_DIM)
             .layoutWeight(1)
             .maxLines(3)
         }
         .width('100%')
         .padding(14)
         .borderRadius(18)
-        .backgroundColor(this.cue && this.phase === 'set' ? ACCENT_TINT : SURFACE)
-        .border({ width: 1, color: this.cue && this.phase === 'set' ? '#40FF8A5B' : HAIRLINE })
-        .animation({ duration: DUR_FAST })
+        .backgroundColor((this.cue || this.noData) && this.phase === 'set' ? ACCENT_TINT : SURFACE)
+        .border({ width: 1, color: (this.cue || this.noData) && this.phase === 'set' ? '#40FF8A5B' : HAIRLINE })
+        .animation(anim({ duration: DUR_FAST }))
         .constraintSize({ minHeight: 64 })
+        .onClick(() => {
+          if (this.noData && this.phase === 'set') {
+            this.switchToDemo();
+          }
+        })
       }
       .padding({ left: PAD, right: PAD })
 
@@ -768,8 +812,8 @@ struct Workout {
                 .borderRadius(14)
                 .backgroundColor(SURFACE)
                 .border({ width: 1, color: HAIRLINE })
-                .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.8, y: 0.8 }))
-                  .animation({ duration: 260, curve: Curve.Friction }))
+                .transition(fx(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.8, y: 0.8 }))
+                  .animation(anim({ duration: 260, curve: Curve.Friction }))))
             }, (d: DoneSet) => d.key)
           }
           .padding({ left: PAD, right: PAD })
@@ -798,9 +842,9 @@ struct Workout {
             .backgroundColor(SURFACE_HI)
             .border({ width: 1, color: HAIRLINE })
             .accessibilityText('Finish workout')
-            .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
-            .transition(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ x: 40 }))
-              .animation({ duration: 260, curve: Curve.Friction }))
+            .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.94 }))
+            .transition(fx(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ x: 40 }))
+              .animation(anim({ duration: 260, curve: Curve.Friction }))))
             .onClick(() => this.finish())
         }
       }

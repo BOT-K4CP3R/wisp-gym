@@ -7,7 +7,9 @@ import { LifeEngine, LifeConfig, CreatureState } from '../core/LifeEngine';
 import { CreatureLook, lookFor } from '../core/CreatureLook';
 import { WorkoutRecord } from '../core/Types';
 import { generateHistory } from '../core/Sim';
-import { Profile, ProfileStore } from '../core/Profile';
+import { Profile, ProfileStore, reducedMotion } from '../core/Profile';
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { setMotion } from '../ui/Motion';
 import { moodInfo } from '../core/Mood';
 import { NextAction, WeekStats, WorkoutSummary, formatSteps, nextAction, summarize, weekStats } from '../core/Plan';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
@@ -114,7 +116,21 @@ export class AppModel {
 
   saveProfile(p: Profile): void {
     this.profiles.save(p);
+    this.applyMotion();
     this.pushWidget();
+  }
+
+  // x86 builds of OpenHarmony are emulators with a software renderer.
+  softwareRenderer(): boolean {
+    try {
+      return deviceInfo.abiList.indexOf('x86') >= 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  applyMotion(): void {
+    setMotion(!reducedMotion(this.profile().motion, this.softwareRenderer()));
   }
 
   config(): LifeConfig {

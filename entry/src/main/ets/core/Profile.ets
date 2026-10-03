@@ -16,6 +16,21 @@ export class Profile {
   onboarded: boolean = false;
   haptics: boolean = true;
   restAlerts: boolean = true;   // notification + buzz when a rest timer ends
+  motion: string = 'auto';      // auto | full | reduced
+}
+
+export const MOTION_MODES: string[] = ['auto', 'full', 'reduced'];
+
+// Whether animations are reduced: an explicit choice wins; 'auto' reduces motion on
+// devices with a software-only renderer (x86 emulators).
+export function reducedMotion(mode: string, softwareRenderer: boolean): boolean {
+  if (mode === 'reduced') {
+    return true;
+  }
+  if (mode === 'full') {
+    return false;
+  }
+  return softwareRenderer;
 }
 
 // Trims, collapses whitespace, drops control characters and caps the length.
@@ -73,6 +88,7 @@ export class ProfileStore {
     p.onboarded = raw.onboarded === true;
     p.haptics = raw.haptics !== false;
     p.restAlerts = raw.restAlerts !== false;
+    p.motion = MOTION_MODES.indexOf(raw.motion) >= 0 ? raw.motion : 'auto';
     return p;
   }
 
@@ -84,6 +100,7 @@ export class ProfileStore {
     clean.onboarded = p.onboarded === true;
     clean.haptics = p.haptics !== false;
     clean.restAlerts = p.restAlerts !== false;
+    clean.motion = MOTION_MODES.indexOf(p.motion) >= 0 ? p.motion : 'auto';
     this.kv.put(KEY_PROFILE, JSON.stringify(clean));
   }
 }

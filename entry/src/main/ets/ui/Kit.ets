@@ -2,6 +2,7 @@ import {
   ACCENT, ACCENT_LOW, ACCENT_MID, ACCENT_TINT, DANGER, DUR_FAST, DUR_SLOW, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, R_PILL,
   R_TILE, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
 } from './Theme';
+import { anim, fx, press, motionOn } from './Motion';
 
 @Builder
 function noContent() {
@@ -26,7 +27,7 @@ export struct Tile {
     .borderRadius(R_TILE)
     .backgroundColor(this.highlight ? ACCENT_TINT : SURFACE)
     .border({ width: 1, color: this.highlight ? '#40FF8A5B' : HAIRLINE })
-    .clickEffect(this.tappable ? { level: ClickEffectLevel.LIGHT, scale: 0.97 } : null)
+    .clickEffect(this.tappable ? press({ level: ClickEffectLevel.LIGHT, scale: 0.97 }) : null)
     .onClick(() => {
       if (this.tappable) {
         this.onTap();
@@ -48,8 +49,8 @@ export struct Reveal {
       this.content()
     }
     .width('100%')
-    .transition(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: 18 }))
-      .animation({ duration: DUR_SLOW, delay: this.delay, curve: Curve.Friction }))
+    .transition(fx(TransitionEffect.OPACITY.combine(TransitionEffect.translate({ y: 18 }))
+      .animation(anim({ duration: DUR_SLOW, delay: this.delay, curve: Curve.Friction }))))
   }
 }
 
@@ -71,7 +72,7 @@ export struct IconButton {
       .backgroundColor(this.filled ? ACCENT : SURFACE)
       .border({ width: this.filled ? 0 : 1, color: HAIRLINE })
       .accessibilityText(this.label)
-      .clickEffect({ level: ClickEffectLevel.MIDDLE, scale: 0.9 })
+      .clickEffect(press({ level: ClickEffectLevel.MIDDLE, scale: 0.9 }))
       .onClick(() => this.onTap())
   }
 }
@@ -128,7 +129,7 @@ export struct Button56 {
       .border({ width: this.k() === 'secondary' || this.k() === 'danger' ? 1 : 0, color: HAIRLINE })
       .opacity(this.active ? 1 : 0.4)
       .accessibilityText(this.label)
-      .clickEffect(this.active ? { level: ClickEffectLevel.LIGHT, scale: 0.96 } : null)
+      .clickEffect(this.active ? press({ level: ClickEffectLevel.LIGHT, scale: 0.96 }) : null)
       .onClick(() => {
         if (this.active) {
           this.onTap();
@@ -196,7 +197,7 @@ export struct RingNumber {
         .height(this.diameter)
         .color(this.color)
         .backgroundColor(TRACK)
-        .style({ strokeWidth: this.stroke, enableSmoothEffect: true })
+        .style({ strokeWidth: this.stroke, enableSmoothEffect: motionOn() })
       Text(this.text.length > 0 ? this.text : '' + Math.round(this.value * 100))
         .fontSize(this.diameter * 0.32)
         .fontFamily(F_BOLD)
@@ -231,7 +232,7 @@ export struct MetricBar {
           .height(6)
           .borderRadius(3)
           .backgroundColor(this.color)
-          .animation({ duration: DUR_SLOW + 200, delay: this.delay, curve: Curve.Friction })
+          .animation(anim({ duration: DUR_SLOW + 200, delay: this.delay, curve: Curve.Friction }))
       }
       .width('100%')
     }
@@ -396,8 +397,8 @@ export struct Chip {
       .backgroundColor(this.selected ? ACCENT : SURFACE_HI)
       .border({ width: this.selected ? 0 : 1, color: HAIRLINE })
       .layoutWeight(this.grow ? 1 : 0)
-      .animation({ duration: DUR_FAST, curve: Curve.EaseOut })
-      .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.94 })
+      .animation(anim({ duration: DUR_FAST, curve: Curve.EaseOut }))
+      .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.94 }))
       .accessibilityText(this.text + (this.selected ? ', selected' : ''))
       .onClick(() => this.onTap())
   }
@@ -437,7 +438,7 @@ export struct NavRow {
         Divider().color(HAIRLINE).strokeWidth(1).margin({ left: 36 })
       }
     }
-    .clickEffect({ level: ClickEffectLevel.LIGHT, scale: 0.98 })
+    .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
     .onClick(() => this.onTap())
   }
 }
@@ -460,7 +461,7 @@ export struct TabBar {
     .borderRadius(20)
     .backgroundColor(this.active === id ? SURFACE_HI : '#00000000')
     .opacity(this.active === id ? 1 : 0.55)
-    .animation({ duration: DUR_FAST, curve: Curve.EaseOut })
+    .animation(anim({ duration: DUR_FAST, curve: Curve.EaseOut }))
     .accessibilityText(label)
     .accessibilitySelected(this.active === id)
     .onClick(() => this.onNavigate(id))
@@ -477,7 +478,7 @@ export struct TabBar {
         .borderRadius(28)
         .backgroundColor(ACCENT)
         .accessibilityText('Start workout')
-        .clickEffect({ level: ClickEffectLevel.MIDDLE, scale: 0.9 })
+        .clickEffect(press({ level: ClickEffectLevel.MIDDLE, scale: 0.9 }))
         .onClick(() => this.onNavigate('train'))
       this.Item('insights', $r('app.media.ic_bars'), 'Insights')
     }

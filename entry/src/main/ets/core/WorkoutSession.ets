@@ -45,6 +45,13 @@ export class WorkoutSession {
     this.record.simulated = simulated;
   }
 
+  // Switching to the simulated stream mid-visit: everything recorded from now on, and the
+  // visit itself, are flagged as simulated.
+  markSimulated(): void {
+    this.simulated = true;
+    this.record.simulated = true;
+  }
+
   phase(): string {
     return this.phaseName;
   }

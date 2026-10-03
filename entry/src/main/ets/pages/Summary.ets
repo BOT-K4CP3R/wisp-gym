@@ -6,6 +6,7 @@ import { LookHolder } from '../components/LookHolder';
 import { Button56, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
 import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
+import { anim, pageDur } from '../ui/Motion';
 
 // End-of-workout celebration: the creature reacts first, then the numbers, then what grew.
 @Entry
@@ -46,10 +47,10 @@ struct Summary {
   }
 
   pageTransition() {
-    PageTransitionEnter({ duration: 420, curve: Curve.Friction })
+    PageTransitionEnter({ duration: pageDur(420), curve: Curve.Friction })
       .opacity(0)
       .scale({ x: 0.94, y: 0.94 })
-    PageTransitionExit({ duration: 260, curve: Curve.EaseIn })
+    PageTransitionExit({ duration: pageDur(260), curve: Curve.EaseIn })
       .opacity(0)
   }
 
@@ -95,7 +96,7 @@ struct Summary {
           .height(8)
           .borderRadius(4)
           .backgroundColor(ACCENT)
-          .animation({ duration: 900, delay: 500 + i * 150, curve: Curve.Friction })
+          .animation(anim({ duration: 900, delay: 500 + i * 150, curve: Curve.Friction }))
         Column()
           .width((Math.max(0.02, g.before) * 100).toFixed(1) + '%')
           .height(8)

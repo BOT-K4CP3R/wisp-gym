@@ -1,9 +1,9 @@
 import { AppModel } from '../app/AppModel';
-import { NAME_MAX, Profile, STEP_GOAL_MAX, STEP_GOAL_MIN, WEEKLY_GOAL_MAX, WEEKLY_GOAL_MIN, sanitizeName } from '../core/Profile';
+import { NAME_MAX, Profile, reducedMotion, STEP_GOAL_MAX, STEP_GOAL_MIN, WEEKLY_GOAL_MAX, WEEKLY_GOAL_MIN, sanitizeName } from '../core/Profile';
 import { formatSteps } from '../core/Plan';
 import { Button56, IconButton, NavRow, SectionLabel, Tile } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
-import { RouteParams } from '../ui/Nav';
+import { RouteParams, navPush, navReplace } from '../ui/Nav';
 import { ACCENT, BG, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE } from '../ui/Theme';
 
 const APP_VERSION = '1.1.0';
@@ -81,7 +81,7 @@ struct Settings {
       m.resetAll();
       this.showConfirm = false;
       router.clear();
-      router.replaceUrl({ url: 'pages/Onboarding' });
+      navReplace(this.getUIContext(), 'pages/Onboarding');
       return;
     }
     this.showConfirm = false;
@@ -95,6 +95,9 @@ struct Settings {
     if (key === 'restAlerts') {
       return this.profile.restAlerts;
     }
+    if (key === 'motion') {
+      return reducedMotion(this.profile.motion, AppModel.get().softwareRenderer());
+    }
     return this.demo;
   }
 
@@ -106,6 +109,11 @@ struct Settings {
       return;
     }
     const p = this.profile;
+    if (key === 'motion') {
+      p.motion = v ? 'reduced' : 'full';
+      this.save(p);
+      return;
+    }
     if (key === 'haptics') {
       p.haptics = v;
     } else {
@@ -293,7 +301,10 @@ struct Settings {
           Tile({ pad: 6 }) {
             Column() {
               this.ToggleRow('Haptics', 'A tick for each rep, a buzz to rack it', 'haptics', true)
-              this.ToggleRow('Rest-over alerts', 'Buzz and notify when rest is over', 'restAlerts', false)
+              this.ToggleRow('Rest-over alerts', 'Buzz and notify when rest is over', 'restAlerts', true)
+              this.ToggleRow('Reduce motion', AppModel.get().softwareRenderer() ?
+                'On by default here: this device renders in software' : 'Fewer animations; the creature still moves',
+                'motion', false)
             }
             .padding({ left: 14, right: 14 })
           }
@@ -321,7 +332,7 @@ struct Settings {
                 onTap: () => {
                   const params = new RouteParams();
                   params.replay = true;
-                  this.getUIContext().getRouter().pushUrl({ url: 'pages/Onboarding', params: params });
+                  navPush(this.getUIContext(), 'pages/Onboarding', params);
                 }
               })
               NavRow({

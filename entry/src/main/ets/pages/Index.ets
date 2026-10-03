@@ -5,8 +5,9 @@ import { ProgressView } from '../views/ProgressView';
 import { InsightsView } from '../views/InsightsView';
 import { TabBar } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
-import { RouteParams } from '../ui/Nav';
+import { RouteParams, navPush } from '../ui/Nav';
 import { BG, DUR_FAST, PAD } from '../ui/Theme';
+import { anim } from '../ui/Motion';
 
 const TABS: string[] = ['home', 'progress', 'insights'];
 
@@ -64,17 +65,16 @@ struct Index {
   }
 
   private navigate(target: string): void {
-    const router = this.getUIContext().getRouter();
     if (target === 'train' || target.startsWith('train:')) {
       const params = new RouteParams();
       if (target.length > 6) {
         params.exercise = target.substring(6);
       }
-      router.pushUrl({ url: 'pages/Workout', params: params });
+      navPush(this.getUIContext(), 'pages/Workout', params);
       return;
     }
     if (target === 'settings') {
-      router.pushUrl({ url: 'pages/Settings' });
+      navPush(this.getUIContext(), 'pages/Settings');
       return;
     }
     const idx = TABS.indexOf(target);
@@ -95,17 +95,17 @@ struct Index {
         TabContent() {
           HomeView({ version: this.version, holder: this.homeHolder, onNavigate: (t: string) => this.navigate(t) })
             .opacity(this.tab === 'home' ? 1 : 0)
-            .animation({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut })
+            .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
         TabContent() {
           ProgressView({ version: this.version, active: this.tab === 'progress', holder: this.progressHolder })
             .opacity(this.tab === 'progress' ? 1 : 0)
-            .animation({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut })
+            .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
         TabContent() {
           InsightsView({ version: this.version })
             .opacity(this.tab === 'insights' ? 1 : 0)
-            .animation({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut })
+            .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
       }
       .barHeight(0)
