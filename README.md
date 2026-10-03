@@ -28,6 +28,20 @@ OpenHarmony / HarmonyOS, **API 20 minimum** (compiled against API 23).
 
 Everything is computed and stored **on the phone**. The app requests no network permission.
 
+## Screenshots (OpenHarmony 6.1 emulator, Demo mode)
+
+| Home: curious (no history) | Home: thriving (14-day history) | Stop cue during a slowing set |
+|---|---|---|
+| ![](docs/screenshots/01-home-curious.jpeg) | ![](docs/screenshots/02-home-thriving.jpeg) | ![](docs/screenshots/03-workout-stop-cue.jpeg) |
+
+| Rest timer after a fatiguing set | Over-training: Wisp asks for rest | "Why is Wisp like this?" |
+|---|---|---|
+| ![](docs/screenshots/04-rest-timer.jpeg) | ![](docs/screenshots/05-home-rest-day.jpeg) | ![](docs/screenshots/06-why-explainability.jpeg) |
+
+| Simulated 14-day evolution | Add widget (launcher menu) | Widget on the home screen |
+|---|---|---|
+| ![](docs/screenshots/07-week-evolution.jpeg) | ![](docs/screenshots/08-add-widget-menu.jpeg) | ![](docs/screenshots/09-home-screen-widget.jpeg) |
+
 ## Platform capabilities used
 
 | OpenHarmony capability | Used for |
@@ -65,9 +79,12 @@ Requirements: macOS or Linux, Node.js >= 22, JDK 17. **DevEco Studio is not requ
 # 3. signed debug HAP -> dist/wisp-gym.hap  (uses the SDK's built-in development certificate)
 ./scripts/build.sh
 
-# 4. install + launch on a running emulator or device (hdc target must be connected)
+# 4a. emulator: starts the Oniro QEMU emulator (macOS: `brew install qemu`), waits for boot, installs, launches
+./scripts/emulator-up.sh
+
+# 4b. or any connected device / emulator
 hdc install -r dist/wisp-gym.hap
-hdc shell aa start -a EntryAbility -b com.hackyeah.wispgym
+hdc shell aa start -a EntryAbility -b com.hackyeah.wispgym -m entry
 ```
 
 With DevEco Studio instead: open this folder, *File → Project Structure → Signing Configs → Automatically
@@ -77,6 +94,28 @@ generate*, select a device and press Run. Project settings: `compatibleSdkVersio
 Open the app, switch **Demo mode** on, tap *Load 2-week demo history*, then *Start workout → Start set*: a
 synthetic set is replayed and counted live; the fatiguing scenario triggers the stop cue. *My week → Play
 14-day evolution* shows the creature growing over a simulated fortnight.
+
+## Verified on an emulator (what was actually run)
+
+Environment: Oniro/OpenHarmony 6.1 (API 23) x86_64 QEMU emulator, headless, on an Apple-silicon Mac (software
+emulation, so it is slow), HAP built with hvigor against SDK 6.1, `compatibleSdkVersion` 20.
+
+| Checked | Result |
+|---|---|
+| HAP builds and is signed with the SDK development certificate | yes |
+| Installs and launches (`bm install`, `aa start`) | yes |
+| Home, Workout, Why, Week screens render; navigation works | yes |
+| Creature Canvas renders and reacts to history changes | yes (after fixing three issues found on the device, see AI_WORKFLOW.md) |
+| Demo set: 8 and 10 reps counted live by the detector, stop cue and explanation, auto-end after a pause, rest timer | yes |
+| Over-training: after a third session in 72 h Wisp shows the rest-day state | yes |
+| Home-screen widget is offered by the launcher, can be added, shows creature + status | yes |
+| System permission dialog for `ACTIVITY_MOTION` with the stated reason | yes |
+| Real accelerometer, pedometer, vibration, delivered notification | **not verifiable** on this emulator (no motion hardware); code paths exist and fail gracefully |
+| HarmonyOS device / DevEco Studio emulator | **not tested** |
+| New launcher icon after reinstall | file verified; the emulator launcher kept its cached icon |
+
+Reproduce the emulator run: `./scripts/build.sh && ./scripts/emulator-up.sh`, then
+`DEVICE=127.0.0.1:55557 ./scripts/emu.sh shot <name>` for screenshots.
 
 ## Tests
 

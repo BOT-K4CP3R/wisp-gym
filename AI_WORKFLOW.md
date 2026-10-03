@@ -50,12 +50,25 @@ stored in this repository.
 - Claims in the README are limited to what was run; limits are stated in *Limitations*.
 - See the repository's commit history for the order of work.
 
+## Emulator verification (agent-driven)
+The agent installed the open-source Oniro emulator, booted it headless, installed the HAP over `hdc`, drove the UI
+with `uitest uiInput`, captured screenshots with `snapshot_display`, read the layout tree with `uitest dumpLayout`
+and read `hilog`. The `docs/screenshots/` images are real captures from that emulator.
+
 ## Failures and lessons
 - First detector version counted walking as reps (caught by a test, fixed).
 - `offset` is a reserved attribute name on ArkUI components; `deviceTypes: phone` is not valid in the
   OpenHarmony SDK (only `default`, `tablet`, `2in1`, ...). Both were caught by the compiler.
 - Real recordings of squats/curls were not available during the hackathon, so accuracy on a real body is
   unmeasured. This is the main known risk and is listed as a limitation.
+- Found only on the running emulator (not by tests or the compiler): (1) Canvas `fillStyle` with `hsl()` strings draws
+  nothing on this runtime (use `#RRGGBB`/`rgba()`); (2) a class instance passed through `@Prop` went stale, the child
+  kept the first value (replaced by a shared mutable holder polled each frame); (3) a continuously animating Canvas on
+  a hidden page starved the main thread on the slow emulator (frames are now skipped on hidden pages, 15 fps).
+- Polling `uitest dumpLayout` every few seconds disturbed timers on the slow emulator and looked like an app freeze;
+  it was an artefact of the measurement, confirmed by an un-polled run that completed normally. Logging
+  (`hilog`) was added to prove what the app was doing instead of guessing.
+- A `previewImages` key in `form_config.json` broke the build (schema), caught by the build, reverted.
 - The Huawei macOS command-line tools are not public; the Linux archive works because hvigor/ohpm are Node programs.
 
 ## Privacy
