@@ -119,10 +119,10 @@ Reproduce the emulator run: `./scripts/build.sh && ./scripts/emulator-up.sh`, th
 
 ## Tests
 
-`./scripts/test.sh` runs 21 tests with Node's built-in runner against the **same source files** the app uses
+`./scripts/test.sh` runs 22 tests with Node's built-in runner against the **same source files** the app uses
 (ArkTS sources are copied to `.test-build` as TypeScript):
 
-- exact rep counts for 3–12 reps and 1.6–3.2 s tempos, any phone tilt
+- exact rep counts for 3–12 reps and 1.6–3.2 s tempos, any phone tilt; a 300-set randomised sweep over synthetic noise, tilt, slow-down and drive loss (99.3% exact, 100% within ±1 rep; synthetic data, not real recordings)
 - zero reps for a phone lying still and for walking; corrupt / duplicate samples ignored
 - the fatigue cue fires exactly once for a slowing set and never for a steady one
 - creature rules: group growth, decay with a floor, rest request, recovery, future records ignored, never sad

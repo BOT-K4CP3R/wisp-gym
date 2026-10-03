@@ -74,6 +74,7 @@ struct WispCard {
     .onClick(() => {
       postCardAction(this, {
         action: 'router',
+        moduleName: 'entry',
         abilityName: 'EntryAbility',
         params: { target: 'home' }
       });
