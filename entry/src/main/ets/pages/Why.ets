@@ -1,5 +1,9 @@
 import { AppModel } from '../app/AppModel';
 import { CreatureState, Reason } from '../core/LifeEngine';
+import { TabBar, Tile } from '../ui/Kit';
+import { goTab } from '../ui/Nav';
+import { registerFonts } from '../ui/Fonts';
+import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, TEXT, TEXT_MUTE, TRACK } from '../ui/Theme';
 
 @Entry
 @Component
@@ -7,74 +11,83 @@ struct Why {
   @State state: CreatureState = new CreatureState();
 
   aboutToAppear(): void {
+    registerFonts(this.getUIContext());
     AppModel.get().state().then((st: CreatureState) => {
       this.state = st;
     });
   }
 
+  // 0..1 for reasons whose value is a percentage, otherwise -1 (no bar).
+  private pct(r: Reason): number {
+    if (r.value.indexOf('%') < 0) {
+      return -1;
+    }
+    const n = parseInt(r.value, 10);
+    return isNaN(n) ? -1 : Math.max(0, Math.min(100, n)) / 100;
+  }
+
   build() {
-    Scroll() {
-      Column() {
-        Row() {
-          Button('Back')
-            .fontSize(13)
-            .height(34)
-            .backgroundColor('#2A2C5A')
-            .onClick(() => this.getUIContext().getRouter().back())
-          Text('Why is Wisp like this?')
-            .fontSize(20)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#E8EAF6')
-            .margin({ left: 12 })
-        }
-        .width('100%')
-        .margin({ top: 16, bottom: 8 })
+    Column() {
+      Scroll() {
+        Column({ space: GAP }) {
+          Text('Insights')
+            .fontSize(34)
+            .fontFamily(F_BOLD)
+            .fontColor(TEXT)
+            .width('100%')
+            .margin({ top: 8 })
+          Text(this.state.headline)
+            .fontSize(15)
+            .fontFamily(F_REG)
+            .fontColor(TEXT_MUTE)
+            .width('100%')
+            .margin({ bottom: 4 })
 
-        Text(this.state.headline)
-          .fontSize(15)
-          .fontColor('#C5CAE9')
-          .width('100%')
-          .margin({ bottom: 8 })
-        Text('Every value below is computed on this phone from your real sessions. Wisp never dies and never loses progress: neglect makes it curious, over-training makes it ask for rest.')
-          .fontSize(12)
-          .fontColor('#7986CB')
-          .width('100%')
-          .margin({ bottom: 12 })
-
-        ForEach(this.state.reasons, (r: Reason) => {
-          Row() {
-            Column() {
-              Text(r.label)
-                .fontSize(14)
-                .fontColor('#E8EAF6')
+          ForEach(this.state.reasons, (r: Reason) => {
+            Tile({ pad: 20 }) {
+              Row() {
+                Text(r.label)
+                  .fontSize(16)
+                  .fontFamily(F_BOLD)
+                  .fontColor(TEXT)
+                  .layoutWeight(1)
+                Text(r.value)
+                  .fontSize(r.value.length > 8 ? 14 : 24)
+                  .fontFamily(F_BOLD)
+                  .fontColor(r.ok ? TEXT : ACCENT)
+                  .maxLines(1)
+              }
+              .width('100%')
+              if (this.pct(r) >= 0) {
+                Progress({ value: Math.round(this.pct(r) * 100), total: 100, type: ProgressType.Linear })
+                  .color(r.ok ? TEXT : ACCENT)
+                  .backgroundColor(TRACK)
+                  .style({ strokeWidth: 4, strokeRadius: 2 })
+                  .width('100%')
+                  .margin({ top: 14 })
+              }
               Text(r.target)
-                .fontSize(11)
-                .fontColor('#9FA8DA')
-                .margin({ top: 2 })
+                .fontSize(12)
+                .fontFamily(F_REG)
+                .fontColor(TEXT_MUTE)
+                .width('100%')
+                .margin({ top: 10 })
             }
-            .layoutWeight(1)
-            .alignItems(HorizontalAlign.Start)
-            Text(r.value)
-              .fontSize(15)
-              .fontWeight(FontWeight.Bold)
-              .fontColor(r.ok ? '#66D9A8' : '#FFB86B')
-              .maxLines(2)
-              .textAlign(TextAlign.End)
-              .constraintSize({ maxWidth: '38%' })
-              .margin({ left: 8 })
-          }
-          .width('100%')
-          .padding(12)
-          .margin({ bottom: 8 })
-          .borderRadius(12)
-          .backgroundColor('#1F2147')
-        }, (r: Reason) => r.key)
+          }, (r: Reason) => r.key)
+        }
+        .padding({ left: PAD, right: PAD, bottom: 16 })
       }
-      .padding({ left: 16, right: 16, bottom: 24 })
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+
+      Column() {
+        TabBar({ active: 'why', onNavigate: (t: string) => goTab(this.getUIContext(), 'why', t) })
+      }
+      .padding({ left: PAD, right: PAD, bottom: 12, top: 4 })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#14152E')
-    .scrollBar(BarState.Off)
+    .backgroundColor(BG)
   }
 }

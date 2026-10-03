@@ -31,6 +31,18 @@ export default class EntryAbility extends UIAbility {
         return;
       }
       hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
+      // Style the system bars to blend into the app (after the content exists).
+      windowStage.getMainWindow().then((win: window.Window) => {
+        win.setWindowBackgroundColor('#0E0F13');
+        return win.setWindowSystemBarProperties({
+          statusBarColor: '#0E0F13',
+          statusBarContentColor: '#FFFFFF',
+          navigationBarColor: '#0E0F13',
+          navigationBarContentColor: '#FFFFFF'
+        });
+      }).catch((e: Error) => {
+        hilog.warn(DOMAIN, 'testTag', 'system bar styling failed: %{public}s', e.message);
+      });
     });
   }
 

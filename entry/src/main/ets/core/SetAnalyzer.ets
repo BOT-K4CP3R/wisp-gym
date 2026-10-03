@@ -21,6 +21,7 @@ export class SetStatus {
   speedLossPct: number = 0;      // last rep vs fastest early rep
   powerLossPct: number = 0;
   stopCue: boolean = false;      // true exactly once, on the rep that crosses the threshold
+  lastIntervalMs: number = 0;    // time since the previous rep (0 for the first)
   explanation: string = '';
 }
 
@@ -52,6 +53,7 @@ export class SetAnalyzer {
     }
     const st = new SetStatus();
     st.reps = this.nReps;
+    st.lastIntervalMs = rep.intervalMs;
 
     let fatigueNow = 0;
     if (this.intervals.length >= 2) {

@@ -18,7 +18,10 @@ const KEY_FORMS = 'form.ids';
 export class WidgetData {
   mood: string = 'curious';
   headline: string = '';
+  moodLabel: string = 'Curious';
   hue: string = '#4F8CFF';
+  hueLight: string = '#A9C4FF';
+  hueDark: string = '#2F5FCC';
   legs: number = 1;
   push: number = 1;
   pull: number = 1;
@@ -96,6 +99,28 @@ export class AppModel {
     this.pushWidget();
   }
 
+  // Reps per calendar day for the last `days` days, oldest first.
+  repsPerDay(days: number): number[] {
+    const ws = this.workouts();
+    const out: number[] = [];
+    const dayMs = 86400000;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    for (let k = days - 1; k >= 0; k--) {
+      const from = today.getTime() - k * dayMs;
+      let reps = 0;
+      for (let i = 0; i < ws.length; i++) {
+        if (ws[i].endMs >= from && ws[i].endMs < from + dayMs) {
+          for (let s = 0; s < ws[i].sets.length; s++) {
+            reps += ws[i].sets[s].reps;
+          }
+        }
+      }
+      out.push(reps);
+    }
+    return out;
+  }
+
   seed(): number {
     return this.store.seed();
   }
@@ -114,6 +139,10 @@ export class AppModel {
     const v = await this.stepSvc.readToday();
     this.lastSteps = v < 0 ? 0 : v;
     return this.lastSteps;
+  }
+
+  stepsToday(): number {
+    return this.lastSteps < 0 ? 0 : this.lastSteps;
   }
 
   async requestMotionPermission(): Promise<void> {
@@ -156,7 +185,10 @@ export class AppModel {
     const d = new WidgetData();
     d.mood = st.mood;
     d.headline = st.headline;
-    d.hue = hslToHex(look.hue, 70, 62);
+    d.moodLabel = st.mood.charAt(0).toUpperCase() + st.mood.substring(1);
+    d.hue = hslToHex(look.hue, 72, 62);
+    d.hueLight = hslToHex((look.hue + 10) % 360, 86, 80);
+    d.hueDark = hslToHex((look.hue + 350) % 360, 62, 42);
     d.legs = look.legs;
     d.push = look.push;
     d.pull = look.pull;

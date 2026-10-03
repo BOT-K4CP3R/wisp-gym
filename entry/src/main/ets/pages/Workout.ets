@@ -2,6 +2,9 @@ import { window } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppModel } from '../app/AppModel';
+import { Button56, IconButton, InfoRow, Tag, Tile } from '../ui/Kit';
+import { registerFonts } from '../ui/Fonts';
+import { ACCENT, BG, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, PAD, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
 import { AccelSample, EXERCISES, Exercise, findExercise } from '../core/Types';
 import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
 import { TraceOptions } from '../core/Sim';
@@ -37,6 +40,10 @@ struct Workout {
   @State demo: boolean = false;
   @State scenario: string = 'fatigue';
   @State sensorOk: boolean = true;
+  @State repScale: number = 1;
+  @State showPicker: boolean = false;
+  @State lastRep: string = '-';
+  @State restTotal: number = 90000;
   private session: WorkoutSession = new WorkoutSession(0, false, new SessionConfig());
   private source: MotionSource | null = null;
   private timer: number = -1;
@@ -46,6 +53,7 @@ struct Workout {
 
 
   aboutToAppear(): void {
+    registerFonts(this.getUIContext());
     this.demo = AppModel.get().isDemo();
     this.session = new WorkoutSession(Date.now(), this.demo, new SessionConfig());
     this.keepScreenOn(true);
@@ -105,6 +113,7 @@ struct Workout {
     this.cue = '';
     this.explanation = '';
     this.reps = 0;
+    this.lastRep = '-';
     this.fatigue = 0;
     this.restNotified = false;
     this.haveOffset = false;
@@ -133,6 +142,11 @@ struct Workout {
       this.reps = u.reps;
       this.fatigue = u.fatigue;
       this.explanation = u.explanation;
+      this.lastRep = u.intervalMs > 0 ? (u.intervalMs / 1000).toFixed(1) + ' s' : '-';
+      this.repScale = 1.14;
+      setTimeout(() => {
+        this.repScale = 1;
+      }, 150);
     }
     if (u.stopCue) {
       this.cue = 'Rack it: one or two reps left.';
@@ -178,6 +192,7 @@ struct Workout {
   private afterSetEnded(): void {
     this.stopSource();
     this.sets = this.session.setsDone();
+    this.restTotal = Math.max(1, this.session.restTotalMs());
     hilog.info(0x00F1, 'WispSet', 'set ended, sets=%{public}d phase=%{public}s', this.sets, this.session.phase());
     this.phase = this.session.phase();
   }
@@ -198,147 +213,205 @@ struct Workout {
     return m + ':' + (s < 10 ? '0' + s : '' + s);
   }
 
-  build() {
-    Scroll() {
-      Column() {
+  private ringValue(): number {
+    if (this.phase === 'rest') {
+      return Math.round(100 * this.restLeft / Math.max(1, this.restTotal));
+    }
+    if (this.phase === 'set') {
+      return Math.max(3, Math.round(this.fatigue * 100 * 2.5)); // 40% fatigue fills the ring
+    }
+    return 0;
+  }
+
+  private ringColor(): string {
+    if (this.phase === 'set' && this.fatigue >= 0.25) {
+      return ACCENT;
+    }
+    return TEXT;
+  }
+
+  private bigText(): string {
+    if (this.phase === 'rest') {
+      return this.restLeft > 0 ? this.fmt(this.restLeft) : '0:00';
+    }
+    return '' + this.reps;
+  }
+
+  private subLabel(): string {
+    if (this.phase === 'set') {
+      return 'reps';
+    }
+    if (this.phase === 'rest') {
+      return this.restLeft > 0 ? 'rest' : 'rest over';
+    }
+    return 'ready';
+  }
+
+  @Builder
+  ExerciseSheet() {
+    Column() {
+      Text('Exercise')
+        .fontSize(22)
+        .fontFamily(F_BOLD)
+        .fontColor(TEXT)
+        .width('100%')
+        .margin({ bottom: 8 })
+      ForEach(EXERCISES, (ex: Exercise) => {
         Row() {
-          Text('Workout')
-            .fontSize(22)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#E8EAF6')
-          Blank()
-          Text(this.demo ? 'DEMO: simulated' : 'LIVE sensor')
-            .fontSize(11)
-            .fontColor(this.demo ? '#FFB74D' : '#81C784')
+          Column() {
+            Text(ex.name).fontSize(16).fontFamily(F_BOLD).fontColor(TEXT)
+            Text(ex.placement).fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE).margin({ top: 2 })
+          }
+          .layoutWeight(1)
+          .alignItems(HorizontalAlign.Start)
+          if (this.exerciseId === ex.id) {
+            Image($r('app.media.ic_check')).width(22).height(22)
+          }
         }
         .width('100%')
-        .margin({ top: 16 })
+        .height(64)
+        .border({ width: { bottom: 1 }, color: HAIRLINE })
+        .onClick(() => {
+          this.exerciseId = ex.id;
+          this.showPicker = false;
+        })
+      }, (ex: Exercise) => ex.id)
+    }
+    .padding({ left: PAD, right: PAD, top: 8, bottom: 24 })
+  }
 
-        Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(EXERCISES, (ex: Exercise) => {
-            Text(ex.name)
-              .fontSize(13)
-              .padding({ left: 12, right: 12, top: 7, bottom: 7 })
-              .margin({ right: 8, bottom: 8 })
-              .borderRadius(16)
-              .fontColor(this.exerciseId === ex.id ? '#FFFFFF' : '#C5CAE9')
-              .backgroundColor(this.exerciseId === ex.id ? '#5C7CFA' : '#2A2C5A')
-              .opacity(this.phase === 'set' ? 0.5 : 1)
-              .onClick(() => {
-                if (this.phase !== 'set') {
-                  this.exerciseId = ex.id;
-                }
-              })
-          }, (ex: Exercise) => ex.id)
+  build() {
+    Column() {
+      Row({ space: 12 }) {
+        IconButton({ icon: $r('app.media.ic_close'), label: 'Close', onTap: () => {
+          this.stopSource();
+          this.getUIContext().getRouter().back();
+        } })
+        Blank()
+        if (this.demo) {
+          Tag({ text: 'DEMO' })
         }
-        .margin({ top: 12 })
+      }
+      .width('100%')
+      .padding({ left: PAD, right: PAD, top: 8 })
 
-        Text('Carry the phone: ' + findExercise(this.exerciseId).placement)
-          .fontSize(12)
-          .fontColor('#9FA8DA')
-          .width('100%')
+      Column() {
+        Text(findExercise(this.exerciseId).name)
+          .fontSize(28)
+          .fontFamily(F_BOLD)
+          .fontColor(TEXT)
+          .onClick(() => {
+            if (this.phase !== 'set') {
+              this.showPicker = true;
+            }
+          })
+        Text(this.sets === 0 ? 'First set' : 'Set ' + (this.sets + (this.phase === 'set' ? 1 : 0)))
+          .fontSize(13)
+          .fontFamily(F_REG)
+          .fontColor(TEXT_MUTE)
+          .margin({ top: 2 })
+      }
+      .margin({ top: 4 })
 
-        Column() {
-          Text('' + this.reps)
-            .fontSize(96)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#FFFFFF')
-          Text(this.phase === 'set' ? 'reps counted automatically' : (this.phase === 'rest' ? 'resting' : 'ready'))
-            .fontSize(14)
-            .fontColor('#9FA8DA')
-          Progress({ value: Math.round(this.fatigue * 100), total: 100, type: ProgressType.Linear })
-            .color(this.fatigue >= 0.25 ? '#FF8A65' : '#66D9A8')
-            .backgroundColor('#34376B')
-            .width('80%')
-            .height(8)
-            .margin({ top: 12 })
-          Text('Tempo fatigue ' + Math.round(this.fatigue * 100) + '%')
-            .fontSize(12)
-            .fontColor('#9FA8DA')
-            .margin({ top: 4 })
+      Column() {
+        Stack() {
+          Progress({ value: this.ringValue(), total: 100, type: ProgressType.Ring })
+            .width(240)
+            .height(240)
+            .color(this.ringColor())
+            .backgroundColor(TRACK)
+            .style({ strokeWidth: 8 })
+          Column() {
+            Text(this.bigText())
+              .fontSize(this.phase === 'rest' ? 64 : 88)
+              .fontFamily(F_BOLD)
+              .fontColor(TEXT)
+              .scale({ x: this.repScale, y: this.repScale })
+              .animation({ duration: 150, curve: Curve.EaseOut })
+            Text(this.subLabel())
+              .fontSize(14)
+              .fontFamily(F_BOLD)
+              .fontColor(TEXT_MUTE)
+          }
         }
-        .width('100%')
-        .padding(16)
-        .margin({ top: 8 })
-        .borderRadius(16)
-        .backgroundColor('#1F2147')
+        .width(240)
+        .height(240)
 
         if (this.cue.length > 0) {
           Text(this.cue)
-            .fontSize(18)
-            .fontWeight(FontWeight.Bold)
-            .fontColor('#FF8A65')
-            .margin({ top: 12 })
-        }
-        if (this.explanation.length > 0) {
-          Text(this.explanation)
-            .fontSize(12)
-            .fontColor('#9FA8DA')
-            .margin({ top: 6 })
-        }
-        if (this.phase === 'rest') {
-          Text(this.restLeft > 0 ? 'Rest ' + this.fmt(this.restLeft) : 'Rest over. Next set when ready.')
-            .fontSize(20)
-            .fontColor('#66D9A8')
-            .margin({ top: 12 })
+            .fontSize(16)
+            .fontFamily(F_BOLD)
+            .fontColor(ACCENT)
+            .margin({ top: 16 })
         }
         if (!this.sensorOk) {
-          Text('Accelerometer unavailable on this device. Turn on Demo mode on the home screen.')
+          Text('Accelerometer unavailable. Turn on Demo mode in Settings.')
             .fontSize(12)
-            .fontColor('#FFB74D')
-            .margin({ top: 8 })
+            .fontFamily(F_REG)
+            .fontColor(TEXT_DIM)
+            .textAlign(TextAlign.Center)
+            .margin({ top: 16, left: PAD, right: PAD })
         }
         if (this.demo && this.phase !== 'set') {
-          Row() {
+          Row({ space: 8 }) {
             ForEach(SCENARIOS, (sc: Scenario) => {
               Text(sc.label)
-                .fontSize(12)
-                .padding({ left: 10, right: 10, top: 6, bottom: 6 })
-                .margin({ right: 8 })
-                .borderRadius(14)
-                .fontColor(this.scenario === sc.id ? '#FFFFFF' : '#C5CAE9')
-                .backgroundColor(this.scenario === sc.id ? '#7E57C2' : '#2A2C5A')
+                .fontSize(13)
+                .fontFamily(F_BOLD)
+                .padding({ left: 14, right: 14, top: 8, bottom: 8 })
+                .borderRadius(18)
+                .fontColor(this.scenario === sc.id ? ON_ACCENT : TEXT_DIM)
+                .backgroundColor(this.scenario === sc.id ? ACCENT : SURFACE)
+                .border({ width: this.scenario === sc.id ? 0 : 1, color: HAIRLINE })
                 .onClick(() => {
                   this.scenario = sc.id;
                 })
             }, (sc: Scenario) => sc.id)
           }
-          .margin({ top: 12 })
-          .width('100%')
-          Text('DEMO: a synthetic accelerometer stream is replayed through the real detector.')
-            .fontSize(11)
-            .fontColor('#FFB74D')
-            .margin({ top: 4 })
-            .width('100%')
+          .margin({ top: 16 })
         }
-
-        if (this.phase === 'set') {
-          Button('End set')
-            .width('100%')
-            .height(52)
-            .margin({ top: 16 })
-            .backgroundColor('#EF5350')
-            .onClick(() => this.endSet())
-        } else {
-          Button(this.phase === 'rest' ? 'Start next set' : 'Start set')
-            .width('100%')
-            .height(52)
-            .margin({ top: 16 })
-            .backgroundColor('#5C7CFA')
-            .onClick(() => this.startSet())
-        }
-        Button('Finish workout (' + this.sets + ' sets)')
-          .width('100%')
-          .height(44)
-          .margin({ top: 10, bottom: 24 })
-          .backgroundColor('#2A2C5A')
-          .onClick(() => this.finish())
       }
-      .padding({ left: 16, right: 16 })
+      .layoutWeight(1)
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+
+      Column() {
+        Tile({ pad: 20 }) {
+          InfoRow({ label: 'Sets done', value: '' + this.sets })
+          InfoRow({ label: 'Last rep', value: this.lastRep })
+          InfoRow({ label: 'Fatigue', value: Math.round(this.fatigue * 100) + '%', divider: false, strong: this.fatigue >= 0.25 })
+        }
+      }
+      .padding({ left: PAD, right: PAD })
+
+      Row({ space: 12 }) {
+        IconButton({ icon: $r('app.media.ic_list'), label: 'Choose exercise', onTap: () => {
+          if (this.phase !== 'set') {
+            this.showPicker = true;
+          }
+        } })
+        Column() {
+          if (this.phase === 'set') {
+            Button56({ label: 'End set', primary: false, onTap: () => this.endSet() })
+          } else {
+            Button56({ label: this.phase === 'rest' ? 'Start next set' : 'Start set', onTap: () => this.startSet() })
+          }
+        }
+        .layoutWeight(1)
+        IconButton({ icon: $r('app.media.ic_check'), label: 'Finish workout', onTap: () => this.finish() })
+      }
+      .width('100%')
+      .padding({ left: PAD, right: PAD, top: 16, bottom: 12 })
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#14152E')
-    .scrollBar(BarState.Off)
+    .backgroundColor(BG)
+    .bindSheet($$this.showPicker, this.ExerciseSheet(), {
+      height: 420,
+      showClose: false,
+      dragBar: true,
+      backgroundColor: SURFACE
+    })
   }
 }

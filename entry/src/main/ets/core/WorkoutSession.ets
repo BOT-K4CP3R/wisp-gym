@@ -12,6 +12,7 @@ export class SessionUpdate {
   fatigue: number = 0;
   explanation: string = '';
   autoEnded: boolean = false;
+  intervalMs: number = 0;
 }
 
 export class SessionConfig {
@@ -30,6 +31,7 @@ export class WorkoutSession {
   private phaseName: string = 'idle';
   private setStartMs: number = 0;
   private restEndMs: number = 0;
+  private restTotal: number = 0;
   private lastRepMs: number = 0;
   private record: WorkoutRecord = new WorkoutRecord();
   private lastStatus: SetStatus = new SetStatus();
@@ -82,6 +84,7 @@ export class WorkoutSession {
     upd.reps = this.lastStatus.reps;
     upd.fatigue = this.lastStatus.fatigue;
     upd.explanation = this.lastStatus.explanation;
+    upd.intervalMs = this.lastStatus.lastIntervalMs;
     return upd;
   }
 
@@ -121,11 +124,16 @@ export class WorkoutSession {
       result = rec;
       const rest = rec.fatigue >= this.cfg.restFatigueLimit ? this.cfg.restFatiguedMs : this.cfg.restBaseMs;
       this.restEndMs = nowMs + rest;
+      this.restTotal = rest;
       this.phaseName = 'rest';
     } else {
       this.phaseName = 'idle'; // nothing counted: discard silently
     }
     return result;
+  }
+
+  restTotalMs(): number {
+    return this.restTotal;
   }
 
   restRemainingMs(nowMs: number): number {

@@ -19,7 +19,7 @@ export class CreatureLook {
 
 export function lookFor(state: CreatureState, seed: number): CreatureLook {
   const look = new CreatureLook();
-  const scale = (lvl: number): number => 0.8 + lvl * 0.65;
+  const scale = (lvl: number): number => 0.86 + lvl * 0.5;
   look.legs = scale(state.levels[GROUPS.indexOf('legs')]);
   look.push = scale(state.levels[GROUPS.indexOf('push')]);
   look.pull = scale(state.levels[GROUPS.indexOf('pull')]);
