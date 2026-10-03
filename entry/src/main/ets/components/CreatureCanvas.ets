@@ -1,6 +1,6 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CreatureLook } from '../core/CreatureLook';
-import { hslToHex } from '../app/AppModel';
+import { AppModel, hslToHex } from '../app/AppModel';
 import { LookHolder } from './LookHolder';
 
 function hexToRgb(hex: string): string {
@@ -19,6 +19,7 @@ export struct CreatureCanvas {
   holder: LookHolder = new LookHolder();
   @Prop label: string = '';
   @Prop canvasHeight: number = 300;
+  @Prop tappable: boolean = false;
   private settings: RenderingContextSettings = new RenderingContextSettings(true);
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
   private timer: number = -1;
@@ -27,6 +28,7 @@ export struct CreatureCanvas {
   private h: number = 320;
   private cw: number = 340;
   private ch: number = 320;
+  private cur: CreatureLook = new CreatureLook();
 
   aboutToAppear(): void {
     this.timer = setInterval(() => {
@@ -38,7 +40,7 @@ export struct CreatureCanvas {
       } catch (e) {
         hilog.error(0x00F0, 'WispCanvas', 'draw failed: %{public}s', JSON.stringify(e));
       }
-    }, 66);
+    }, 40);
   }
 
   aboutToDisappear(): void {
@@ -48,15 +50,45 @@ export struct CreatureCanvas {
     }
   }
 
+  // Morphs the drawn look towards the target so mood and size changes animate smoothly.
+  private follow(): void {
+    const T = this.holder.look;
+    const C = this.cur;
+    if (this.holder.snap) {
+      this.holder.snap = false;
+      C.legs = T.legs; C.push = T.push; C.pull = T.pull; C.core = T.core;
+      C.hue = T.hue; C.glow = T.glow; C.eyeOpen = T.eyeOpen; C.smile = T.smile; C.bob = T.bob;
+    } else {
+      const k = 0.1;
+      C.legs += (T.legs - C.legs) * k;
+      C.push += (T.push - C.push) * k;
+      C.pull += (T.pull - C.pull) * k;
+      C.core += (T.core - C.core) * k;
+      C.hue += (T.hue - C.hue) * k;
+      C.glow += (T.glow - C.glow) * k;
+      C.eyeOpen += (T.eyeOpen - C.eyeOpen) * k;
+      C.smile += (T.smile - C.smile) * k;
+      C.bob += (T.bob - C.bob) * k;
+    }
+    C.mood = T.mood;
+    C.happyEyes = T.happyEyes;
+  }
+
   // The scene is authored in a 340x320 box and scaled to whatever size the component gets.
   private draw(): void {
     const c = this.ctx;
+    // The context knows its real size; onAreaChange is not delivered reliably everywhere.
+    if (c.width > 0 && c.height > 0) {
+      this.cw = c.width;
+      this.ch = c.height;
+    }
     c.clearRect(0, 0, this.cw, this.ch);
     const s = Math.min(this.cw / this.w, this.ch / this.h);
     c.save();
     c.translate((this.cw - this.w * s) / 2, (this.ch - this.h * s) / 2);
     c.scale(s, s);
-    this.drawScene(c, this.holder.look, (Date.now() - this.startedAt) / 1000);
+    this.follow();
+    this.drawScene(c, this.cur, (Date.now() - this.startedAt) / 1000);
     c.restore();
   }
 
@@ -70,7 +102,10 @@ export struct CreatureCanvas {
     const deeper = hslToHex((L.hue + 350) % 360, 60, 34);
     const glowRgb = hexToRgb(hslToHex(L.hue, 90, 66));
 
-    const bob = Math.sin(t * 2.1) * 5 * L.bob;
+    const pokeP = (Date.now() - this.holder.pokedAt) / 900;
+    const poking = pokeP >= 0 && pokeP < 1;
+    const hop = poking ? -Math.sin(Math.PI * pokeP) * 30 : 0;
+    const bob = Math.sin(t * 2.1) * 5 * L.bob + hop;
     const breathe = 1 + Math.sin(t * 1.5) * 0.012 * (0.4 + L.bob);
     const blinkPhase = t % 4.4;
     const blink = blinkPhase > 4.22 ? 0.1 : 1;
@@ -87,7 +122,7 @@ export struct CreatureCanvas {
     // ground shadow (shrinks when the creature bobs up)
     c.fillStyle = 'rgba(0, 0, 0, 0.30)';
     c.beginPath();
-    c.ellipse(cx, 296, 96 - bob * 1.4, 13 - bob * 0.3, 0, 0, Math.PI * 2);
+    c.ellipse(cx, 296, Math.max(50, 96 + bob * 1.2), Math.max(7, 13 + bob * 0.2), 0, 0, Math.PI * 2);
     c.fill();
 
     c.save();
@@ -196,7 +231,16 @@ export struct CreatureCanvas {
     const gaze = Math.sin(t * 0.7) * 2.2;
     for (let side = -1; side <= 1; side += 2) {
       const ex = cx + side * 25;
-      if (open > 0.28) {
+      if (L.happyEyes || poking) {
+        // joyful closed eyes: upturned arcs
+        c.strokeStyle = '#1D1A3A';
+        c.lineWidth = 4;
+        c.lineCap = 'round';
+        c.beginPath();
+        c.moveTo(ex - 11, 102);
+        c.quadraticCurveTo(ex, 88, ex + 11, 102);
+        c.stroke();
+      } else if (open > 0.28) {
         const eh = 17 * open;
         c.fillStyle = '#FFFFFF';
         c.beginPath();
@@ -229,7 +273,7 @@ export struct CreatureCanvas {
     c.strokeStyle = '#1D1A3A';
     c.lineWidth = 3.4;
     c.lineCap = 'round';
-    if (L.smile > 0.9) {
+    if (L.smile > 0.9 || poking) {
       c.fillStyle = '#7A2342';
       c.beginPath();
       c.moveTo(cx - 14, 121);
@@ -248,8 +292,22 @@ export struct CreatureCanvas {
       c.stroke();
     }
 
-    // sparkles when thriving
-    if (L.mood === 'thriving') {
+    // heart floating up after a tap
+    if (poking) {
+      const hy = 30 - pokeP * 46;
+      const hx = cx + 64;
+      const hs = 9 + pokeP * 4;
+      c.fillStyle = 'rgba(255, 138, 91, ' + (1 - pokeP).toFixed(2) + ')';
+      c.beginPath();
+      c.moveTo(hx, hy + hs * 0.9);
+      c.bezierCurveTo(hx - hs * 1.6, hy - hs * 0.2, hx - hs * 0.7, hy - hs * 1.3, hx, hy - hs * 0.45);
+      c.bezierCurveTo(hx + hs * 0.7, hy - hs * 1.3, hx + hs * 1.6, hy - hs * 0.2, hx, hy + hs * 0.9);
+      c.closePath();
+      c.fill();
+    }
+
+    // sparkles when thriving or proud
+    if (L.mood === 'thriving' || L.mood === 'proud') {
       for (let i = 0; i < 3; i++) {
         const a = 0.35 + 0.65 * Math.abs(Math.sin(t * 1.8 + i * 1.7));
         const sx = [cx - 118, cx + 112, cx + 84][i];
@@ -268,7 +326,7 @@ export struct CreatureCanvas {
     }
 
     // sleepy bubbles
-    if (L.mood === 'resting' || L.mood === 'sleepy') {
+    if ((L.mood === 'resting' || L.mood === 'sleepy') && !poking) {
       c.fillStyle = 'rgba(244, 245, 255, 0.9)';
       c.font = '700 24px sans-serif';
       c.fillText('z', cx + 70, 56 + Math.sin(t * 1.5) * 4);
@@ -289,6 +347,13 @@ export struct CreatureCanvas {
         })
         .onReady(() => {
           this.draw();
+        })
+        .accessibilityText('Your creature')
+        .onClick(() => {
+          if (this.tappable) {
+            this.holder.poke();
+            AppModel.get().tick(20);
+          }
         })
       if (this.label.length > 0) {
         Text(this.label)

@@ -56,7 +56,8 @@ export class SimulatedSource extends MotionSource {
   private timer: number = -1;
   private trace: AccelSample[] = [];
   private index: number = 0;
-  private startedAt: number = 0;
+  private elapsed: number = 0;
+  private lastNow: number = 0;
   private opts: TraceOptions;
 
   constructor(opts: TraceOptions) {
@@ -71,10 +72,16 @@ export class SimulatedSource extends MotionSource {
   start(listener: (s: AccelSample) => void): boolean {
     this.trace = generateSet(this.opts);
     this.index = 0;
-    this.startedAt = Date.now();
+    this.elapsed = 0;
+    this.lastNow = Date.now();
     this.timer = setInterval(() => {
       try {
-        const elapsed = Date.now() - this.startedAt;
+        // Advance by the real time since the last tick, capped, so a wall-clock jump
+        // (time sync on the device) can neither freeze nor fast-forward the replay.
+        const now = Date.now();
+        this.elapsed += Math.min(250, Math.max(0, now - this.lastNow));
+        this.lastNow = now;
+        const elapsed = this.elapsed;
         while (this.index < this.trace.length && this.trace[this.index].t <= elapsed) {
           listener(this.trace[this.index]);
           this.index++;

@@ -85,6 +85,19 @@ export class WorkoutRecord {
   simulated: boolean = false;
 }
 
+// 12345 -> "12,345"
+export function groupThousands(n: number): string {
+  const s = '' + Math.round(Math.abs(n));
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 === 0) {
+      out += ',';
+    }
+    out += s.charAt(i);
+  }
+  return (n < 0 ? '-' : '') + out;
+}
+
 export function clamp(v: number, lo: number, hi: number): number {
   if (isNaN(v)) {
     return lo;

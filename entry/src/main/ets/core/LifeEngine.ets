@@ -1,4 +1,4 @@
-import { GROUPS, WorkoutRecord, SetRecord, clamp } from './Types';
+import { GROUPS, WorkoutRecord, SetRecord, clamp, groupThousands } from './Types';
 
 // Converts training history + daily movement into the creature's state.
 //
@@ -16,6 +16,9 @@ export class LifeConfig {
   restSessions72h: number = 3;     // this many sessions in 72 h => ask for a rest day
   restLoad48h: number = 150;       // weighted reps in 48 h => ask for a rest day
   stepsGoal: number = 8000;
+  proudHours: number = 5;          // right after a session the creature is proud, not tired
+  sleepyRecover: number = 0.25;    // below this recovery (and after the proud window) it recharges
+  name: string = 'Wisp';           // the creature's name, used in headlines
 }
 
 export class Reason {
@@ -45,6 +48,10 @@ export class CreatureState {
   reasons: Reason[] = [];
   workoutsLast7d: number = 0;
   hoursSinceLast: number = -1;
+  hoursToFull: number = 0;            // hours until recovery reaches 100%
+  sessions72h: number = 0;
+  load48h: number = 0;                // weighted reps in the last 48 h
+  totalWorkouts: number = 0;
 }
 
 const HOUR_MS = 3600000;
@@ -116,6 +123,10 @@ export class LifeEngine {
       st.hoursSinceLast = (nowMs - lastEnd) / HOUR_MS;
       st.recover = clamp(st.hoursSinceLast / this.cfg.recoveryHours, 0, 1);
     }
+    st.hoursToFull = lastEnd < 0 ? 0 : Math.max(0, this.cfg.recoveryHours - st.hoursSinceLast);
+    st.sessions72h = sessions72;
+    st.load48h = load48;
+    st.totalWorkouts = workouts.length;
     st.move = clamp(stepsToday / this.cfg.stepsGoal, 0, 1);
     st.restRequested = sessions72 >= this.cfg.restSessions72h || load48 >= this.cfg.restLoad48h;
 
@@ -128,7 +139,7 @@ export class LifeEngine {
         'group-' + g,
         this.cap(g) + ' strength',
         Math.round(st.levels[i] * 100) + '%',
-        setCount[i] + ' sets in 7 days (older work fades by half every ' + this.cfg.halfLifeDays + ' days)',
+        setCount[i] + (setCount[i] === 1 ? ' set' : ' sets') + ' in the last 7 days',
         st.levels[i] >= 0.4
       ));
     }
@@ -136,21 +147,23 @@ export class LifeEngine {
       'recover',
       'Recovery',
       Math.round(st.recover * 100) + '%',
-      lastEnd < 0 ? 'no workouts yet' : st.hoursSinceLast.toFixed(0) + ' h since last session, full at ' + this.cfg.recoveryHours + ' h',
+      lastEnd < 0 ? 'No workouts yet.' : st.hoursSinceLast.toFixed(0) + ' h since your last session. Fully recovered after ' +
+        this.cfg.recoveryHours + ' h.',
       st.recover >= 0.6
     ));
     st.reasons.push(new Reason(
       'rest-guard',
       'Rest guard',
-      st.restRequested ? 'rest day suggested' : 'ok',
-      sessions72 + ' sessions in 72 h, ' + Math.round(load48) + ' weighted reps in 48 h',
+      st.restRequested ? 'Rest day' : 'All good',
+      sessions72 + (sessions72 === 1 ? ' session' : ' sessions') + ' in 72 h (rest at ' + this.cfg.restSessions72h +
+        '), ' + Math.round(load48) + ' weighted reps in 48 h (rest at ' + this.cfg.restLoad48h + ').',
       !st.restRequested
     ));
     st.reasons.push(new Reason(
       'move',
       'Daily movement',
-      Math.round(stepsToday) + ' steps',
-      'goal ' + this.cfg.stepsGoal + ' steps',
+      groupThousands(Math.max(0, stepsToday)) + ' steps',
+      'Goal ' + groupThousands(this.cfg.stepsGoal) + ' steps a day.',
       st.move >= 0.6
     ));
     return st;
@@ -160,7 +173,10 @@ export class LifeEngine {
     if (st.restRequested) {
       return 'resting';
     }
-    if (st.hoursSinceLast >= 0 && st.recover < 0.35) {
+    if (st.hoursSinceLast >= 0 && st.hoursSinceLast < this.cfg.proudHours) {
+      return 'proud';
+    }
+    if (st.hoursSinceLast >= 0 && st.recover < this.cfg.sleepyRecover) {
       return 'sleepy';
     }
     if (st.train >= 0.55 && st.move >= 0.5) {
@@ -174,18 +190,21 @@ export class LifeEngine {
 
   private headlineFor(st: CreatureState): string {
     if (st.mood === 'resting') {
-      return 'Wisp is tired and asks for a rest day.';
+      return this.cfg.name + ' is tired and asks for a rest day.';
+    }
+    if (st.mood === 'proud') {
+      return this.cfg.name + ' is pumped after your session.';
     }
     if (st.mood === 'sleepy') {
-      return 'Wisp is still recovering from your last session.';
+      return this.cfg.name + ' is recharging after your last session.';
     }
     if (st.mood === 'thriving') {
-      return 'Wisp is thriving. Strong week.';
+      return this.cfg.name + ' is thriving. Strong week.';
     }
     if (st.mood === 'curious') {
-      return 'Wisp is curious. Ready when you are.';
+      return this.cfg.name + ' is curious. Ready when you are.';
     }
-    return 'Wisp is content.';
+    return this.cfg.name + ' is content and steady.';
   }
 
   private cap(s: string): string {

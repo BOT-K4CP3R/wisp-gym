@@ -15,6 +15,7 @@ export class CreatureLook {
   smile: number = 0.5;   // -0.2..1 (never negative below -0.2: the creature is never sad)
   bob: number = 0.5;     // idle animation amplitude
   mood: string = 'curious';
+  happyEyes: boolean = false; // closed, upturned "^ ^" eyes
 }
 
 export function lookFor(state: CreatureState, seed: number): CreatureLook {
@@ -47,6 +48,12 @@ export function lookFor(state: CreatureState, seed: number): CreatureLook {
     look.eyeOpen = 0.4;
     look.smile = 0.35;
     look.bob = 0.2;
+  } else if (state.mood === 'proud') {
+    look.eyeOpen = 1;
+    look.smile = 1;
+    look.bob = 0.9;
+    look.happyEyes = true;
+    look.glow = Math.max(look.glow, 0.85);
   } else if (state.mood === 'thriving') {
     look.eyeOpen = 1;
     look.smile = 1;

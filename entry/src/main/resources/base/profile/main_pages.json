@@ -1,8 +1,9 @@
 {
   "src": [
     "pages/Index",
+    "pages/Onboarding",
     "pages/Workout",
-    "pages/Why",
-    "pages/Week"
+    "pages/Summary",
+    "pages/Settings"
   ]
 }

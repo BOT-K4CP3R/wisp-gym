@@ -20,6 +20,7 @@ export class SessionConfig {
   restBaseMs: number = 90000;
   restFatiguedMs: number = 150000;
   restFatigueLimit: number = 0.3;
+  maxRestMs: number = 600000;
 }
 
 export class WorkoutSession {
@@ -130,6 +131,30 @@ export class WorkoutSession {
       this.phaseName = 'idle'; // nothing counted: discard silently
     }
     return result;
+  }
+
+  // Rest timer controls (like +15 s / -15 s in gym loggers). The remaining time stays
+  // between 0 and maxRestMs; the ring total follows so progress never jumps backwards.
+  adjustRest(deltaMs: number, nowMs: number): void {
+    if (this.phaseName !== 'rest') {
+      return;
+    }
+    const remaining = Math.max(0, this.restEndMs - nowMs);
+    const next = Math.min(this.cfg.maxRestMs, Math.max(0, remaining + deltaMs));
+    this.restEndMs = nowMs + next;
+    this.restTotal = Math.max(next, Math.min(this.cfg.maxRestMs, this.restTotal + deltaMs), 1);
+  }
+
+  // Ends the rest early: the next set can start right away.
+  skipRest(): void {
+    if (this.phaseName === 'rest') {
+      this.phaseName = 'idle';
+    }
+  }
+
+  // Sets recorded so far in this visit (newest last).
+  sets(): SetRecord[] {
+    return this.record.sets;
   }
 
   restTotalMs(): number {

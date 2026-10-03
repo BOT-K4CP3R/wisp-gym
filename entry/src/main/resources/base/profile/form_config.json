@@ -20,6 +20,27 @@
       "supportDimensions": [
         "2*2"
       ]
+    },
+    {
+      "name": "widget_wide",
+      "displayName": "$string:widget_wide_display_name",
+      "description": "$string:widget_wide_desc",
+      "src": "./ets/widget/pages/WispWide.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "auto",
+      "isDynamic": true,
+      "isDefault": false,
+      "updateEnabled": true,
+      "scheduledUpdateTime": "07:00",
+      "updateDuration": 1,
+      "defaultDimension": "2*4",
+      "supportDimensions": [
+        "2*4"
+      ]
     }
   ]
 }

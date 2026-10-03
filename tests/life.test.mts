@@ -57,7 +57,23 @@ test('recovery grows with time since the last session', () => {
   const soon = engine().evaluate(NOW, [workout(NOW - 4 * HOUR, 'legs', 3, 8)], 0);
   const later = engine().evaluate(NOW, [workout(NOW - 40 * HOUR, 'legs', 3, 8)], 0);
   assert.ok(later.recover > soon.recover);
-  assert.equal(soon.mood, 'sleepy');
+  assert.equal(soon.hoursToFull, 44);
+});
+
+test('right after a session the creature is proud, then recharges, then is ready again', () => {
+  const at = (h: number) => engine().evaluate(NOW, [workout(NOW - h * HOUR, 'legs', 3, 8)], 0).mood;
+  assert.equal(at(0.5), 'proud');
+  assert.equal(at(4), 'proud');
+  assert.equal(at(8), 'sleepy');
+  assert.notEqual(at(13), 'sleepy');
+  assert.notEqual(at(30), 'sleepy');
+});
+
+test('headlines use the creature name', () => {
+  const cfg = new LifeConfig();
+  cfg.name = 'Mochi';
+  const st = new LifeEngine(cfg).evaluate(NOW, [], 0);
+  assert.match(st.headline, /^Mochi /);
 });
 
 test('future / corrupt records are ignored', () => {
@@ -74,7 +90,7 @@ test('every state has an explanation for each driver', () => {
 });
 
 test('creature never looks sad: smile stays positive in every mood', () => {
-  for (const [hist, steps] of [[[], 0], [generateHistory(NOW, 14, 1), 9000], [[workout(NOW - HOUR, 'legs', 9, 12)], 0]] as [WorkoutRecord[], number][]) {
+  for (const [hist, steps] of [[[], 0], [generateHistory(NOW, 14, 1), 9000], [[workout(NOW - HOUR, 'legs', 9, 12)], 0], [[workout(NOW - 8 * HOUR, 'legs', 3, 8)], 0]] as [WorkoutRecord[], number][]) {
     const look = lookFor(engine().evaluate(NOW, hist, steps), 123);
     assert.ok(look.smile > 0, `${look.mood} smile ${look.smile}`);
     assert.ok(look.legs >= 0.8 && look.legs <= 1.45);

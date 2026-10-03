@@ -22,7 +22,7 @@
     },
     {
       "name": "widget_desc",
-      "value": "Your creature and training status at a glance."
+      "value": "Your creature and its mood at a glance."
     },
     {
       "name": "WispFormAbility_label",
@@ -31,6 +31,14 @@
     {
       "name": "WispFormAbility_desc",
       "value": "Home-screen widget for Wisp Gym"
+    },
+    {
+      "name": "widget_wide_display_name",
+      "value": "Wisp status"
+    },
+    {
+      "name": "widget_wide_desc",
+      "value": "Your creature, next step, strength, recovery and steps."
     }
   ]
 }

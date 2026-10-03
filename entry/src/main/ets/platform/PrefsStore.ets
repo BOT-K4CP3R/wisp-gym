@@ -7,16 +7,36 @@ const TAG = 'WispPrefs';
 const DOMAIN = 0x0001;
 
 // Platform implementation of the core KeyValueStore on top of @ohos.data.preferences.
+// Preferences keeps a per-process cache. The widget runs in its own process, so it calls
+// reload() to drop that cache and read what the app wrote to disk.
 export class PrefsStore extends KeyValueStore {
   private prefs: preferences.Preferences | null = null;
+  private context: common.Context;
+  private name: string;
 
-  constructor(context: common.Context) {
+  constructor(context: common.Context, name: string) {
     super();
+    this.context = context;
+    this.name = name;
+    this.open();
+  }
+
+  private open(): void {
     try {
-      this.prefs = preferences.getPreferencesSync(context, { name: 'wisp' });
+      this.prefs = preferences.getPreferencesSync(this.context, { name: this.name });
     } catch (e) {
+      this.prefs = null;
       hilog.error(DOMAIN, TAG, 'preferences unavailable: %{public}s', JSON.stringify(e));
     }
+  }
+
+  reload(): void {
+    try {
+      preferences.removePreferencesFromCacheSync(this.context, { name: this.name });
+    } catch (e) {
+      hilog.warn(DOMAIN, TAG, 'cache eviction failed: %{public}s', JSON.stringify(e));
+    }
+    this.open();
   }
 
   get(key: string): string {
