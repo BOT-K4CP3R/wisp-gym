@@ -140,8 +140,10 @@ export function generateHistory(nowMs: number, days: number, seed: number): Work
       continue;
     }
     const w = new WorkoutRecord();
-    const end = nowMs - d * dayMs + 18 * 3600000;
-    w.endMs = Math.min(end, nowMs - 3600000);
+    // Evening sessions (18:00 local time), never later than an hour ago.
+    const day = new Date(nowMs - d * dayMs);
+    day.setHours(18, 0, 0, 0);
+    w.endMs = Math.min(day.getTime(), nowMs - 3600000);
     w.startMs = w.endMs - 55 * 60000;
     w.id = 'sim' + d;
     w.simulated = true;
