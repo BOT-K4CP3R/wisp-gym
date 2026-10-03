@@ -4,7 +4,7 @@
 # restored afterwards and signatures/ is git-ignored.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TOOLS_DIR="${TOOLS_DIR:-$HOME/hackathon/_tools}"
+TOOLS_DIR="${TOOLS_DIR:-$HOME/.wisp-gym-tools}"
 export PATH="/opt/homebrew/opt/openjdk@17/bin:$PATH"
 
 cd "$ROOT"

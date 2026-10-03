@@ -9,7 +9,7 @@
 # SDK downloaded by oniro-app) and is removed to save ~6 GB.
 set -euo pipefail
 
-TOOLS_DIR="${TOOLS_DIR:-$HOME/hackathon/_tools}"
+TOOLS_DIR="${TOOLS_DIR:-$HOME/.wisp-gym-tools}"
 CLT_DIR="${CLT_DIR:-$HOME/command-line-tools}"
 CLT_URL="${CLT_URL:-https://repo.huaweicloud.com/harmonyos/ohpm/5.1.0/commandline-tools-linux-x64-5.1.0.840.zip}"
 

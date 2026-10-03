@@ -1,25 +1,38 @@
-# build output / caches
+# --- build output / caches
 /node_modules
-/.test-build
-/.hvigor
-/.idea
-**/build/
 /oh_modules
 **/oh_modules
+**/build/
+/.hvigor
+/.idea
 /entry/.preview
+entry/.test/
+.test-build/
+dist/
 *.log
-# machine-local config
+
+# --- machine-local config
 local.properties
 .vscode/
-# signing material: NEVER commit
-*.p12
-*.cer
-*.p7b
-*.csr
-.oniro/
-signing/
-dist/
+.DS_Store
 build-profile.json5.orig
+
+# --- signing material: NEVER commit (scripts/build.sh generates it locally)
 signatures/
-entry/.test/
+signing/
+.oniro/
+*.p12
+*.pfx
+*.pem
+*.cer
+*.csr
+*.p7b
+*.jks
+*.keystore
+
+# --- generated media (attached to GitHub Releases instead)
 submission/.video-tmp/
+submission/*.mp4
+submission/*.pptx
+submission/*.pdf
+release/

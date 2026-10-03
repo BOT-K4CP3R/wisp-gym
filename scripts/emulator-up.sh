@@ -9,7 +9,7 @@
 # bridge uses 55557 by default (override with PORT=...).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TOOLS_DIR="${TOOLS_DIR:-$HOME/hackathon/_tools}"
+TOOLS_DIR="${TOOLS_DIR:-$HOME/.wisp-gym-tools}"
 PORT="${PORT:-55557}"
 D="127.0.0.1:$PORT"
 HAP="${HAP:-$ROOT/dist/wisp-gym.hap}"

@@ -1,161 +1,159 @@
-# Wisp Gym
+<p align="center">
+  <img src="docs/app-icon.png" width="132" alt="Wisp Gym icon">
+</p>
 
-> A small creature that lives on your home screen and grows from your **real** training.
-> Your phone counts your reps from motion alone, tells you when a set is getting too slow, and asks for a rest
-> day when you overdo it. No accounts, no cloud, no AI model: signal processing and transparent rules.
+<h1 align="center">Wisp Gym</h1>
 
-Built for **HackYeah 2026 / Huawei Challenge "Imagine What's Next"**. Native **ArkTS + ArkUI** for
-OpenHarmony / HarmonyOS, **API 20 minimum** (compiled against API 23).
+<p align="center">
+  A creature that grows from your <b>real</b> training.<br>
+  Your phone counts reps from motion alone, tells you when a set is getting too slow, and asks for a rest day when you overdo it.<br>
+  <sub>Native ArkTS/ArkUI app for OpenHarmony and HarmonyOS. No account. No cloud. No AI model.</sub>
+</p>
 
-**Challenge areas:** *Human-Centric Technology* (lead: wellbeing, responsible design) + *Spatial Experiences*
-(sensing body motion in space). 
+<p align="center">
+  <a href="https://github.com/BOT-K4CP3R/wisp-gym/actions/workflows/test.yml"><img src="https://github.com/BOT-K4CP3R/wisp-gym/actions/workflows/test.yml/badge.svg" alt="tests"></a>
+  <img src="https://img.shields.io/badge/OpenHarmony-API%2020%2B-orange" alt="API 20+">
+  <img src="https://img.shields.io/badge/ArkTS-ArkUI-blue" alt="ArkTS ArkUI">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT">
+</p>
+
+<p align="center">
+  <a href="https://github.com/BOT-K4CP3R/wisp-gym/releases/latest"><b>Download the .hap</b></a> ·
+  <a href="https://github.com/BOT-K4CP3R/wisp-gym/releases/latest/download/wisp-gym-demo.mp4">Demo video (85 s)</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="AI_WORKFLOW.md">AI workflow</a>
+</p>
+
+Built for **HackYeah 2026 / Huawei Challenge "Imagine What's Next"**. Lead area: *Human-Centric Technology*
+(wellbeing, responsible design), plus *Spatial Experiences* (sensing body motion). Targets **API 20+** (compiled against API 23).
+
+<p align="center">
+  <img src="docs/screenshots/01-home-thriving.jpg" width="19%">
+  <img src="docs/screenshots/03-set-counting.jpg" width="19%">
+  <img src="docs/screenshots/04-set-rack-it.jpg" width="19%">
+  <img src="docs/screenshots/05-home-resting.jpg" width="19%">
+  <img src="docs/screenshots/06-insights.jpg" width="19%">
+</p>
 
 ## What it does
 
 1. **Reps counted automatically.** Carry the phone in a pocket or armband. A streaming detector removes gravity,
-   projects motion on the gravity axis (phone orientation is irrelevant) and counts the drive peaks.
-   Walking and sensor glitches are rejected.
-2. **Knows when to stop.** From the first reps it learns your fresh tempo and drive. When reps get slower and
-   weaker it vibrates and says *"Rack it: one or two reps left"* and shows the numbers behind the advice
-   (e.g. "rep 7 took 2.9 s vs 2.0 s at your fastest, 31% slower").
-3. **Wisp, the creature, is your training made visible.** Each muscle group (legs, push, pull, core) grows a
-   body part of the creature. Its colour, glow, eyes and mood come from recovery and daily steps.
-4. **Rest is part of the game.** Three sessions in 72 h or a very heavy load and Wisp asks for a rest day.
+   projects motion on the gravity axis (phone orientation does not matter) and counts the drive peaks. Walking and
+   sensor glitches are rejected.
+2. **Knows when to stop.** It learns your fresh tempo from the first reps. When reps get slower and weaker the ring
+   turns orange and Wisp says *"rack it"*, with the numbers behind the advice.
+3. **Wisp is your training made visible.** Each muscle group (legs, push, pull, core) grows a body part of the
+   creature. Its colour, glow, eyes and mood come from recovery and daily steps.
+4. **Rest is part of the game.** Three sessions in 72 h, or a very heavy load, and Wisp asks for a rest day.
 5. **Never punishes.** Levels have a floor, there are no streaks to lose, and the creature is never sad: neglect
    makes it *curious*, over-training makes it *sleepy*.
-6. **Explainable.** "Why is Wisp like this?" lists every value with its source numbers.
-7. **Home-screen widget** (2×2 / 2×4) shows the creature and today's status without opening the app.
+6. **Explainable.** The *Insights* tab lists every value with its source numbers.
+7. **Home-screen widget** shows Wisp and today's status without opening the app.
 
 Everything is computed and stored **on the phone**. The app requests no network permission.
-
-## Screenshots (OpenHarmony 6.1 emulator, Demo mode)
-
-| Home | Activity dots | Counting a set |
-|---|---|---|
-| ![](docs/screenshots/01-home-thriving.jpg) | ![](docs/screenshots/02-home-activity.jpg) | ![](docs/screenshots/03-set-counting.jpg) |
-
-| "Rack it" cue | Over-training: Wisp rests | Insights |
-|---|---|---|
-| ![](docs/screenshots/04-set-rack-it.jpg) | ![](docs/screenshots/05-home-resting.jpg) | ![](docs/screenshots/06-insights.jpg) |
-
-| Week | Settings | Home-screen widget |
-|---|---|---|
-| ![](docs/screenshots/07-week.jpg) | ![](docs/screenshots/08-settings.jpg) | ![](docs/screenshots/09-widget.jpg) |
 
 ## Platform capabilities used
 
 | OpenHarmony capability | Used for |
 |---|---|
-| Accelerometer (SensorServiceKit) | live rep detection and tempo/drive analysis |
+| Accelerometer (SensorServiceKit) | live rep detection and tempo / drive analysis |
 | Pedometer (SensorServiceKit, `ACTIVITY_MOTION`) | daily movement for the creature |
 | Service widget (`FormExtensionAbility`, `formProvider`) | creature + status on the home screen |
 | Vibrator | stop cue and end-of-rest haptics |
 | NotificationKit | "rest over" notification |
 | Preferences (`@ohos.data.preferences`) | local, validated persistence |
-| Window `keepScreenOn` | screen stays on during a workout |
+| Window (`keepScreenOn`, system-bar styling) | the workout screen stays on |
 | ArkUI Canvas | procedural creature rendering |
 
-## Honest status: what is real and what is simulated
+## Quick start
 
-| Part | Status |
-|---|---|
-| Rep detection, fatigue analysis, creature model, persistence | real code, covered by unit tests on synthetic **and** edge-case traces |
-| Accelerometer / pedometer adapters | real SensorServiceKit code; **not verifiable on an emulator** (no physical motion) |
-| **Demo mode** | replays a *synthetic* accelerometer stream through the **same** detector as the real sensor; the UI is labelled `DEMO: simulated sensors` everywhere |
-| 14-day history and the evolution time-lapse | generated by `core/Sim.ets`, labelled *simulated* |
-| Rep-counting accuracy on a real body | not yet measured on real gym recordings (see Limitations) |
-
-## Download
-
-Pre-built, debug-signed package (SDK development certificate): [release/wisp-gym-debug.hap](release/wisp-gym-debug.hap) (`release/SHA256SUMS`). It installs on an OpenHarmony 6.x emulator or device that trusts the SDK development certificate; for other targets rebuild and sign with your own material.
-
-## Build, install, launch
-
-Requirements: macOS or Linux, Node.js >= 22, JDK 17. **DevEco Studio is not required.**
+**Just try it:** download `wisp-gym-debug.hap` from the [latest release](https://github.com/BOT-K4CP3R/wisp-gym/releases/latest)
+and install it on an OpenHarmony 6.x emulator or development device:
 
 ```bash
-# 1. one-time toolchain (OpenHarmony SDK 6.1 / API 23, hvigor, ohpm, signing helper)
-./scripts/setup-macos.sh          # macOS; on Linux use `oniro-app cmdtools install` instead
-
-# 2. unit tests (plain Node, no SDK)
-./scripts/test.sh
-
-# 3. signed debug HAP -> dist/wisp-gym.hap  (uses the SDK's built-in development certificate)
-./scripts/build.sh
-
-# 4a. emulator: starts the Oniro QEMU emulator (macOS: `brew install qemu`), waits for boot, installs, launches
-./scripts/emulator-up.sh
-
-# 4b. or any connected device / emulator
-hdc install -r dist/wisp-gym.hap
+hdc install -r wisp-gym-debug.hap
 hdc shell aa start -a EntryAbility -b com.hackyeah.wispgym -m entry
 ```
 
-With DevEco Studio instead: open this folder, *File → Project Structure → Signing Configs → Automatically
-generate*, select a device and press Run. Project settings: `compatibleSdkVersion` 20, `compileSdkVersion` 23.
+The package is signed with the SDK's public *development* certificate. On other targets build and sign it yourself (below).
 
-### Trying it without gym equipment
-Open the app, switch **Demo mode** on, tap *Load 2-week demo history*, then *Start workout → Start set*: a
-synthetic set is replayed and counted live; the fatiguing scenario triggers the stop cue. *My week → Play
-14-day evolution* shows the creature growing over a simulated fortnight.
+**In the app:** *Settings (top right) → Demo mode on → Load 2-week history*, then the orange tab-bar button to start a
+workout. Emulators have no real motion, so Demo mode replays a **simulated** accelerometer stream through the same
+detector as the real sensor; it is labelled as such in the UI.
 
-## Verified on an emulator (what was actually run)
+## Build from source
 
-Environment: Oniro/OpenHarmony 6.1 (API 23) x86_64 QEMU emulator, headless, on an Apple-silicon Mac (software
-emulation, so it is slow), HAP built with hvigor against SDK 6.1, `compatibleSdkVersion` 20.
+Requirements: macOS or Linux, Node.js ≥ 22, JDK 17. **DevEco Studio is not required.**
+
+```bash
+./scripts/setup-macos.sh     # one-time: OpenHarmony SDK 6.1 (API 23), hvigor, ohpm (macOS; on Linux use `oniro-app cmdtools install`)
+./scripts/test.sh            # 22 unit tests on plain Node, no SDK needed
+./scripts/build.sh           # signed debug HAP -> dist/wisp-gym.hap (throw-away development certificate, never committed)
+./scripts/emulator-up.sh     # start the Oniro emulator (macOS: brew install qemu), install and launch
+```
+
+With DevEco Studio instead: open the folder, *File → Project Structure → Signing Configs → Automatically generate*,
+choose a device and press Run. Settings: `compatibleSdkVersion` 20, `compileSdkVersion` 23.
+
+## How it works
+
+```
+Accelerometer ──► RepDetector ──► SetAnalyzer ──► WorkoutSession ──► WorkoutRecord ──► LifeEngine ──► Creature + widget
+ (SensorKit)       peaks, gravity   tempo + drive     set / rest         (Preferences)    decay, rest      (Canvas / Form)
+                   axis, walking    loss -> fatigue   state machine                       guard, reasons
+                   rejection        proxy, stop cue
+```
+
+`entry/src/main/ets/core` is pure, dependency-free logic that is unit-tested on Node **and** compiled for the device
+from the same source files. OS access is isolated in `platform/`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Verified, and what is not
 
 | Checked | Result |
 |---|---|
-| HAP builds and is signed with the SDK development certificate | yes |
-| Installs and launches (`bm install`, `aa start`) | yes |
-| Home, Workout, Insights, Week screens (monochrome bento UI) render; tab navigation works | yes |
-| Creature Canvas renders and reacts to history changes | yes (after fixing three issues found on the device, see AI_WORKFLOW.md) |
-| Demo set: 8 and 10 reps counted live by the detector, stop cue and explanation, auto-end after a pause, rest timer | yes |
-| Over-training: after a third session in 72 h Wisp shows the rest-day state | yes |
-| Home-screen widget is offered by the launcher, can be added, shows creature + status | yes |
-| System permission dialog for `ACTIVITY_MOTION` with the stated reason | yes |
-| Real accelerometer, pedometer, vibration, delivered notification | **not verifiable** on this emulator (no motion hardware); code paths exist and fail gracefully |
-| HarmonyOS device / DevEco Studio emulator | **not tested** |
-| Tapping the widget to open the app | **not verified**: the emulator's synthetic tap did not trigger the card's router action (code follows the documented `postCardAction`) |
-| `scripts/setup-macos.sh` from a clean machine | the same commands were run step by step; the script itself was not re-run end-to-end (disk space) |
-| New launcher icon after reinstall | file verified; the emulator launcher kept its cached icon |
+| Builds and signs with hvigor against SDK 6.1; installs and launches on an OpenHarmony 6.1 emulator | yes |
+| Home, Workout, Insights, Week screens and tab navigation | yes (emulator) |
+| A live-counted demo set with the "rack it" cue, rest timer, over-training state | yes (emulator) |
+| Home-screen widget offered by the launcher, added, shows creature + status | yes (emulator) |
+| System permission dialog for `ACTIVITY_MOTION` with a stated reason | yes |
+| Unit tests | 22 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
+| **Real** accelerometer / pedometer / vibration data | **not verifiable** on an emulator; code paths exist and fail gracefully |
+| Rep accuracy on real bodies | **not measured**; the sweep above is on synthetic traces |
+| Tapping the widget to open the app | **not verified** |
+| HarmonyOS device, DevEco emulator | **not tested** |
 
-Reproduce the emulator run: `./scripts/build.sh && ./scripts/emulator-up.sh`, then
-`DEVICE=127.0.0.1:55557 ./scripts/emu.sh shot <name>` for screenshots.
+First launch on the software-emulated Oniro emulator can take about a minute; it is much faster on hardware-accelerated emulators.
 
-## Tests
+## Project layout
 
-`./scripts/test.sh` runs 22 tests with Node's built-in runner against the **same source files** the app uses
-(ArkTS sources are copied to `.test-build` as TypeScript):
-
-- exact rep counts for 3–12 reps and 1.6–3.2 s tempos, any phone tilt; a 300-set randomised sweep over synthetic noise, tilt, slow-down and drive loss (99.3% exact, 100% within ±1 rep; synthetic data, not real recordings)
-- zero reps for a phone lying still and for walking; corrupt / duplicate samples ignored
-- the fatigue cue fires exactly once for a slowing set and never for a steady one
-- creature rules: group growth, decay with a floor, rest request, recovery, future records ignored, never sad
-- session state machine and persistence, including corrupt or hostile stored JSON
-
-## Submission material
-
-- [submission/wisp-gym-presentation.pptx](submission/wisp-gym-presentation.pptx) (and `.pdf`): 11-slide deck
-- [submission/wisp-gym-demo.mp4](submission/wisp-gym-demo.mp4): 85 s narrated promo built from real emulator captures (`submission/make_video.py`, `make_deck.py` regenerate both)
-- [submission/FORM_ANSWERS.md](submission/FORM_ANSWERS.md): text for the HackYeah project form
-
-## Documentation
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): layers, data flow, design decisions
-- [AI_WORKFLOW.md](AI_WORKFLOW.md): AI tools used to build this project, prompts, validation, lessons
-- [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md): 90-second demo walkthrough
+```
+entry/src/main/ets/core/        pure logic: RepDetector, SetAnalyzer, WorkoutSession, LifeEngine, Store, Sim
+entry/src/main/ets/platform/    sensors, pedometer, preferences, haptics, notifications
+entry/src/main/ets/ui/          design tokens, components, fonts, tab navigation
+entry/src/main/ets/pages/       Index (Home), Workout, Why (Insights), Week
+entry/src/main/ets/widget/      home-screen card, FormExtensionAbility
+tests/                          Node tests (22) + hypium suite in entry/src/test
+scripts/                        setup, build, test, emulator, icon generation
+submission/                     scripts that build the demo video and presentation from real emulator captures
+docs/                           architecture, demo script, screenshots
+```
 
 ## Limitations
 
-- Counting accuracy and the fatigue proxy are validated on synthetic traces and edge cases, **not yet on a
-  large set of real recordings**. Phone-in-pocket sensing suits squats, deadlifts, curls, presses and crunches;
-  bench-type lifts are not supported.
-- The fatigue value is a *tempo and drive proxy*, not bar velocity or a medical measurement. The app gives no
-  medical advice.
+- Phone-in-pocket sensing suits squats, deadlifts, curls, presses and crunches; bench-type lifts are not supported.
+- The fatigue value is a *tempo and drive proxy*, not bar velocity or a medical measurement. The app gives no medical advice.
 - The widget refreshes periodically and after each workout; it does not animate.
-- Emulators do not deliver real motion, vibration or pedometer data.
+
+## Documentation
+
+[Architecture](docs/ARCHITECTURE.md) · [Demo script](docs/DEMO_SCRIPT.md) · [AI workflow](AI_WORKFLOW.md) ·
+[Third-party notices](THIRD_PARTY.md) · [Security](SECURITY.md)
+
+## AI disclosure
+
+The product contains **no AI model**. The project was built with an AI coding agent (Claude Sonnet 5.5 in Claude Code);
+tools, prompts, validation and lessons are documented in [AI_WORKFLOW.md](AI_WORKFLOW.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Bundled font: Nunito (SIL OFL 1.1), see [THIRD_PARTY.md](THIRD_PARTY.md).
