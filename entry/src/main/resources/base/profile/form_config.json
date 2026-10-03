@@ -20,7 +20,8 @@
       "supportDimensions": [
         "2*2",
         "2*4"
-      ]
+      ],
+      "previewImages": "$media:widget_preview"
     }
   ]
 }

@@ -1,10 +1,20 @@
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CreatureLook } from '../core/CreatureLook';
+import { LookHolder } from './LookHolder';
+import { hslToHex } from '../app/AppModel';
+
+function hexToRgb(hex: string): string {
+  const r = parseInt(hex.substring(1, 3), 16);
+  const g = parseInt(hex.substring(3, 5), 16);
+  const b = parseInt(hex.substring(5, 7), 16);
+  return r + ', ' + g + ', ' + b;
+}
 
 // Procedural creature drawn on a Canvas. Every number comes from CreatureLook, so the
 // shape, colour and mood are a direct function of the user's real training state.
 @Component
 export struct CreatureCanvas {
-  @Prop look: CreatureLook = new CreatureLook();
+  holder: LookHolder = new LookHolder();
   @Prop label: string = '';
   private settings: RenderingContextSettings = new RenderingContextSettings(true);
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
@@ -15,9 +25,16 @@ export struct CreatureCanvas {
 
   aboutToAppear(): void {
     this.timer = setInterval(() => {
-      this.t += 0.045;
-      this.draw();
-    }, 40);
+      if (!this.holder.active) {
+        return; // hidden page: skip the frame entirely
+      }
+      this.t += 0.07;
+      try {
+        this.draw();
+      } catch (e) {
+        hilog.error(0x00F0, 'WispCanvas', 'draw failed: %{public}s', JSON.stringify(e));
+      }
+    }, 66);
   }
 
   aboutToDisappear(): void {
@@ -29,19 +46,21 @@ export struct CreatureCanvas {
 
   private draw(): void {
     const c = this.ctx;
-    const L = this.look;
+    const L: CreatureLook = this.holder.look;
     c.clearRect(0, 0, this.w, this.h);
     const cx = this.w / 2;
     const bob = Math.sin(this.t * 2.2) * 7 * L.bob;
     const breathe = 1 + Math.sin(this.t * 1.6) * 0.012;
-    const body = `hsl(${L.hue}, 70%, 62%)`;
-    const dark = `hsl(${L.hue}, 70%, 46%)`;
-    const light = `hsl(${L.hue}, 80%, 76%)`;
+    // Canvas fillStyle on this runtime needs #RRGGBB / rgba(); hsl() strings render nothing.
+    const body = hslToHex(L.hue, 70, 62);
+    const dark = hslToHex(L.hue, 70, 46);
+    const light = hslToHex(L.hue, 80, 76);
+    const glowRgb = hexToRgb(hslToHex(L.hue, 90, 65));
 
     // glow
     const g = c.createRadialGradient(cx, 150, 10, cx, 150, 150);
-    g.addColorStop(0, `hsla(${L.hue}, 90%, 65%, ${0.15 + L.glow * 0.45})`);
-    g.addColorStop(1, `hsla(${L.hue}, 90%, 65%, 0)`);
+    g.addColorStop(0, 'rgba(' + glowRgb + ', ' + (0.15 + L.glow * 0.45).toFixed(2) + ')');
+    g.addColorStop(1, 'rgba(' + glowRgb + ', 0)');
     c.fillStyle = g;
     c.beginPath();
     c.arc(cx, 150, 150, 0, Math.PI * 2);

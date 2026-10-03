@@ -1,5 +1,6 @@
 import { window } from '@kit.ArkUI';
 import { common } from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
 import { AppModel } from '../app/AppModel';
 import { AccelSample, EXERCISES, Exercise, findExercise } from '../core/Types';
 import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
@@ -42,6 +43,7 @@ struct Workout {
   private clockOffset: number = 0;
   private haveOffset: boolean = false;
   private restNotified: boolean = false;
+
 
   aboutToAppear(): void {
     this.demo = AppModel.get().isDemo();
@@ -106,6 +108,7 @@ struct Workout {
     this.fatigue = 0;
     this.restNotified = false;
     this.haveOffset = false;
+    hilog.info(0x00F1, 'WispSet', 'startSet %{public}s demo=%{public}s', this.exerciseId, '' + this.demo);
     this.session.startSet(this.exerciseId, Date.now());
     this.phase = 'set';
     this.stopSource();
@@ -126,6 +129,7 @@ struct Workout {
     const s = new AccelSample(raw.t + this.clockOffset, raw.x, raw.y, raw.z);
     const u = this.session.onSample(s);
     if (u.newRep) {
+      hilog.info(0x00F1, 'WispSet', 'REP %{public}d fatigue=%{public}s', u.reps, u.fatigue.toFixed(2));
       this.reps = u.reps;
       this.fatigue = u.fatigue;
       this.explanation = u.explanation;
@@ -137,6 +141,15 @@ struct Workout {
   }
 
   private onTick(): void {
+    try {
+      this.tickBody();
+    } catch (e) {
+      const err = e as Error;
+      hilog.error(0x00F1, 'WispSet', 'tick failed: %{public}s | %{public}s', err.message, err.stack);
+    }
+  }
+
+  private tickBody(): void {
     const now = Date.now();
     if (this.session.phase() === 'set') {
       const u = this.session.tick(now);
@@ -165,6 +178,7 @@ struct Workout {
   private afterSetEnded(): void {
     this.stopSource();
     this.sets = this.session.setsDone();
+    hilog.info(0x00F1, 'WispSet', 'set ended, sets=%{public}d phase=%{public}s', this.sets, this.session.phase());
     this.phase = this.session.phase();
   }
 

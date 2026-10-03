@@ -1,22 +1,31 @@
 import { AppModel } from '../app/AppModel';
 import { CreatureState } from '../core/LifeEngine';
-import { CreatureLook } from '../core/CreatureLook';
 import { CreatureCanvas } from '../components/CreatureCanvas';
+import { LookHolder } from '../components/LookHolder';
 import { StatBar } from '../components/StatBar';
 
 @Entry
 @Component
 struct Index {
   @State state: CreatureState = new CreatureState();
-  @State look: CreatureLook = new CreatureLook();
+  private holder: LookHolder = new LookHolder();
   @State demo: boolean = false;
   @State message: string = '';
 
+  onPageHide(): void {
+    this.holder.active = false;
+  }
+
   aboutToAppear(): void {
     this.reload();
+    if (!AppModel.get().isDemo()) {
+      // Ask once, with a stated reason, for the pedometer; the app works without it.
+      AppModel.get().requestMotionPermission();
+    }
   }
 
   onPageShow(): void {
+    this.holder.active = true;
     this.reload();
   }
 
@@ -25,7 +34,7 @@ struct Index {
     this.demo = model.isDemo();
     const st = await model.state();
     this.state = st;
-    this.look = model.lookFor(st);
+    this.holder.look = model.lookFor(st);
     model.pushWidget();
   }
 
@@ -48,7 +57,7 @@ struct Index {
         .width('100%')
         .margin({ top: 16 })
 
-        CreatureCanvas({ look: this.look, label: '' })
+        CreatureCanvas({ holder: this.holder, label: '' })
 
         Text(this.state.headline)
           .fontSize(16)

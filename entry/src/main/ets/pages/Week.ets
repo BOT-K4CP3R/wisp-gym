@@ -1,24 +1,29 @@
 import { AppModel } from '../app/AppModel';
 import { LifeEngine, LifeConfig, CreatureState } from '../core/LifeEngine';
-import { CreatureLook, lookFor } from '../core/CreatureLook';
+import { lookFor } from '../core/CreatureLook';
 import { WorkoutRecord } from '../core/Types';
 import { generateHistory } from '../core/Sim';
 import { CreatureCanvas } from '../components/CreatureCanvas';
+import { LookHolder } from '../components/LookHolder';
 
 @Entry
 @Component
 struct Week {
-  @State look: CreatureLook = new CreatureLook();
+  private holder: LookHolder = new LookHolder();
   @State label: string = '';
   @State playing: boolean = false;
   @State summary: string[] = [];
   private timer: number = -1;
   private engine: LifeEngine = new LifeEngine(new LifeConfig());
 
+  onPageHide(): void {
+    this.holder.active = false;
+  }
+
   aboutToAppear(): void {
     const model = AppModel.get();
     const st = model.evaluateNow();
-    this.look = model.lookFor(st);
+    this.holder.look = model.lookFor(st);
     const ws = model.workouts();
     const lines: string[] = [];
     for (let i = Math.max(0, ws.length - 8); i < ws.length; i++) {
@@ -31,6 +36,10 @@ struct Week {
       lines.push((d.getMonth() + 1) + '/' + d.getDate() + '  ' + w.sets.length + ' sets, ' + reps + ' reps' + (w.simulated ? '  (simulated)' : ''));
     }
     this.summary = lines.reverse();
+  }
+
+  onPageShow(): void {
+    this.holder.active = true;
   }
 
   aboutToDisappear(): void {
@@ -59,7 +68,7 @@ struct Week {
       const t = now - (day - 1) * 86400000;
       const upTo: WorkoutRecord[] = all.filter((w: WorkoutRecord) => w.endMs <= t);
       const st: CreatureState = this.engine.evaluate(t, upTo, 5200);
-      this.look = lookFor(st, seed);
+      this.holder.look = lookFor(st, seed);
       this.label = 'SIMULATED time-lapse, day ' + (15 - day) + ' of 14: ' + st.headline;
       day--;
       if (day < 1) {
@@ -86,7 +95,7 @@ struct Week {
         .width('100%')
         .margin({ top: 16, bottom: 8 })
 
-        CreatureCanvas({ look: this.look, label: this.label })
+        CreatureCanvas({ holder: this.holder, label: this.label })
 
         Button(this.playing ? 'Playing...' : 'Play 14-day evolution (simulated)')
           .width('100%')

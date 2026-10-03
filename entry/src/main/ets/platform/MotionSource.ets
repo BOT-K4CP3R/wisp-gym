@@ -73,13 +73,19 @@ export class SimulatedSource extends MotionSource {
     this.index = 0;
     this.startedAt = Date.now();
     this.timer = setInterval(() => {
-      const elapsed = Date.now() - this.startedAt;
-      while (this.index < this.trace.length && this.trace[this.index].t <= elapsed) {
-        listener(this.trace[this.index]);
+      try {
+        const elapsed = Date.now() - this.startedAt;
+        while (this.index < this.trace.length && this.trace[this.index].t <= elapsed) {
+          listener(this.trace[this.index]);
+          this.index++;
+        }
+        if (this.index >= this.trace.length) {
+          this.stop();
+        }
+      } catch (e) {
+        const err = e as Error;
+        hilog.error(DOMAIN, TAG, 'sim tick failed at %{public}d: %{public}s | %{public}s', this.index, err.message, err.stack);
         this.index++;
-      }
-      if (this.index >= this.trace.length) {
-        this.stop();
       }
     }, 20);
     return true;
