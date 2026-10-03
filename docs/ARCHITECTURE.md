@@ -37,6 +37,9 @@ ArkTS and runs on Node for tests (`scripts/test.sh`).
 | `CreatureLook` | State → drawing parameters (scales, hue, glow, eyes, smile). Shared by the Canvas and the widget. |
 | `Store` | `KeyValueStore` abstraction, validated JSON persistence. Corrupt storage never crashes the app. |
 | `Sim` | Deterministic synthetic accelerometer traces and a 14-day history for the demo and the tests. |
+| `Plan` | Next-step card, weekly totals (Monday first, compared with last week up to the same time), workout summary, labels. |
+| `Mood` | Display names for moods, shared by the app and the widgets. |
+| `Profile` | Name, goals, haptics, rest alerts and motion mode, validated on load and save. |
 
 ### `platform/` — thin OS adapters
 `MotionSource` (accelerometer via SensorServiceKit, or a simulated replay), `StepService` (hardware pedometer,
@@ -44,19 +47,31 @@ day baseline), `PrefsStore` (`@ohos.data.preferences`), `Haptics` (vibrator), `N
 Each adapter degrades gracefully: no sensor → clear message; no vibrator → silent; no permission → feature off.
 
 ### UI
-- `Index` home: bento tiles (creature, Strength ring, Move, Recovery, 5-week activity dots), tab bar, settings sheet.
-- `Workout`: exercise picker sheet, live rep ring (turns accent at the stop cue), info rows, rest timer.
-- `Why` ("Insights"): every number behind the creature's state (explainability).
-- `Week`: recent sessions and a *simulated* 14-day evolution time-lapse.
-- `widget/WispCard` (2×2, 2×4): a creature built from rounded boxes (cards cannot host a Canvas), refreshed by
-  `formProvider.updateForm` after every workout and by the scheduled update.
+- `Onboarding`: welcome, how it works, name, goals, permission primers, real sensors or demo, ready. Replayable.
+- `Index`: tab shell (`Tabs` with a hidden bar and a floating custom bar) hosting `views/HomeView`,
+  `views/ProgressView` and `views/InsightsView`; tabs keep their state, re-tapping scrolls to top, widget taps are
+  routed through `AppStorage` (`NAV_TARGET`).
+- `HomeView`: creature (tap for a hop and a heart), next-step card, Strength and Move rings, Recovery, this week,
+  muscle groups, 5-week activity grid.
+- `Workout`: exercise picker, 3-2-1 countdown, live ring, coaching line with the fatigue explanation, rest controls,
+  completed-set chips, save/discard confirmation, silent-sensor fallback to Demo mode.
+- `Summary`: creature reaction, duration / sets / reps, what grew (before → after), exercises.
+- `ProgressView`: weekly totals, 7-day reps chart, simulated 14-day time-lapse, history with per-set details.
+- `InsightsView`: every number behind the creature's state (explainability) and how the app works.
+- `Settings`: name, goals, haptics, rest alerts, reduce motion, demo, sample data, replay intro, erase all.
+- `ui/Motion`: one place that decides whether animations, transitions and press effects run.
+- `widget/WispCard` (2×2) and `widget/WispWide` (2×4): a creature built from rounded boxes (`widget/common/MiniWisp`,
+  cards cannot host a Canvas), refreshed by `formProvider.updateForm` after workouts, settings changes, when the app
+  goes to the background and by the scheduled update. The widget process re-reads Preferences from disk, because
+  Preferences caches per process; widget ids live in their own file and dead ids are pruned.
 
 ## Data flow of one set
-1. `Workout` starts a `MotionSource` (real accelerometer, or a simulated stream in Demo mode).
+1. After a 3-second countdown `Workout` starts a `MotionSource` (real accelerometer, or a simulated stream in Demo mode).
 2. Each `AccelSample` is shifted onto the wall clock once and passed to `WorkoutSession.onSample`.
 3. `RepDetector` emits a confirmed `RepEvent`; `SetAnalyzer` updates fatigue and may raise the stop cue.
 4. The page shows the live count, vibrates on the cue, and the 250 ms tick auto-ends the set after a pause.
-5. `finish` stores a `WorkoutRecord`; `AppModel` re-evaluates the creature and pushes the widget.
+5. `finish` stores a `WorkoutRecord`; `AppModel` computes the before/after summary, re-evaluates the creature and
+   pushes the widgets; the Summary page replaces the Workout page.
 
 ## Design decisions
 - **Non-punitive by construction**: levels have a floor, recovery is a score (not a streak), the smile is never

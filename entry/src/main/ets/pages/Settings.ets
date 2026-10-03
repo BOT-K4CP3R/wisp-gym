@@ -24,6 +24,11 @@ struct Settings {
     this.load();
   }
 
+  // Back from the replayed introduction: show the possibly renamed creature and goals.
+  onPageShow(): void {
+    this.load();
+  }
+
   private load(): void {
     const m = AppModel.get();
     this.profile = m.profile();
@@ -76,7 +81,7 @@ struct Settings {
     const router = this.getUIContext().getRouter();
     if (this.confirm === 'sample') {
       m.loadDemoHistory();
-      this.toast('Loaded 14 days of simulated history');
+      setTimeout(() => this.toast('Loaded 14 days of simulated history'), 400); // after the sheet closes
     } else if (this.confirm === 'erase') {
       m.resetAll();
       this.showConfirm = false;

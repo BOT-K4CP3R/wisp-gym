@@ -31,6 +31,8 @@ const HOW: Explainer[] = [
 @Component
 export struct InsightsView {
   @Prop @Watch('reload') version: number = 0;
+  @Prop @Watch('scrollTop') topSignal: number = 0;
+  private scroller: Scroller = new Scroller();
   @State state: CreatureState = new CreatureState();
   @State name: string = 'Wisp';
   @State halfLife: number = 4;
@@ -38,6 +40,11 @@ export struct InsightsView {
 
   aboutToAppear(): void {
     this.reload();
+  }
+
+  // Tapping the active tab again returns to the top, as in platform apps.
+  scrollTop(): void {
+    this.scroller.scrollEdge(Edge.Top);
   }
 
   reload(): void {
@@ -102,7 +109,7 @@ export struct InsightsView {
   }
 
   build() {
-    Scroll() {
+    Scroll(this.scroller) {
       Column({ space: GAP }) {
         Column() {
           Text('Insights')

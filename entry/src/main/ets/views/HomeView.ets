@@ -17,6 +17,8 @@ const WEEK_LETTERS: string[] = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 @Component
 export struct HomeView {
   @Prop @Watch('reload') version: number = 0;
+  @Prop @Watch('scrollTop') topSignal: number = 0;
+  private scroller: Scroller = new Scroller();
   holder: LookHolder = new LookHolder();
   onNavigate: (target: string) => void = () => {};
   @State state: CreatureState = new CreatureState();
@@ -34,6 +36,11 @@ export struct HomeView {
 
   aboutToAppear(): void {
     this.reload();
+  }
+
+  // Tapping the active tab again returns to the top, as in platform apps.
+  scrollTop(): void {
+    this.scroller.scrollEdge(Edge.Top);
   }
 
   reload(): void {
@@ -339,7 +346,7 @@ export struct HomeView {
   }
 
   build() {
-    Scroll() {
+    Scroll(this.scroller) {
       Column({ space: GAP }) {
         this.Header()
         Reveal({ delay: 0 }) {

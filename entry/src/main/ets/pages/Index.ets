@@ -17,6 +17,7 @@ const TABS: string[] = ['home', 'progress', 'insights'];
 struct Index {
   @State tab: string = 'home';
   @State version: number = 0;
+  @State topSignal: number = 0;
   @StorageProp(NAV_TARGET) @Watch('onNavTarget') navTarget: string = '';
   private homeHolder: LookHolder = new LookHolder();
   private progressHolder: LookHolder = new LookHolder();
@@ -83,6 +84,8 @@ struct Index {
     }
     if (this.tab !== target) {
       AppModel.get().tick(8);
+    } else {
+      this.topSignal++;
     }
     this.tab = target;
     this.tabs.changeIndex(idx);
@@ -93,17 +96,17 @@ struct Index {
     Stack({ alignContent: Alignment.Bottom }) {
       Tabs({ index: TABS.indexOf(this.tab), controller: this.tabs }) {
         TabContent() {
-          HomeView({ version: this.version, holder: this.homeHolder, onNavigate: (t: string) => this.navigate(t) })
+          HomeView({ version: this.version, topSignal: this.topSignal, holder: this.homeHolder, onNavigate: (t: string) => this.navigate(t) })
             .opacity(this.tab === 'home' ? 1 : 0)
             .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
         TabContent() {
-          ProgressView({ version: this.version, active: this.tab === 'progress', holder: this.progressHolder })
+          ProgressView({ version: this.version, topSignal: this.topSignal, active: this.tab === 'progress', holder: this.progressHolder })
             .opacity(this.tab === 'progress' ? 1 : 0)
             .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
         TabContent() {
-          InsightsView({ version: this.version })
+          InsightsView({ version: this.version, topSignal: this.topSignal })
             .opacity(this.tab === 'insights' ? 1 : 0)
             .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }

@@ -65,6 +65,8 @@ function deltaText(now: number, prev: number): string {
 @Component
 export struct ProgressView {
   @Prop @Watch('reload') version: number = 0;
+  @Prop @Watch('scrollTop') topSignal: number = 0;
+  private scroller: Scroller = new Scroller();
   @Prop @Watch('onActive') active: boolean = false;
   holder: LookHolder = new LookHolder();
   @State week: WeekStats = new WeekStats();
@@ -91,6 +93,11 @@ export struct ProgressView {
     if (!this.active) {
       this.stopTimeLapse();
     }
+  }
+
+  // Tapping the active tab again returns to the top, as in platform apps.
+  scrollTop(): void {
+    this.scroller.scrollEdge(Edge.Top);
   }
 
   reload(): void {
@@ -242,7 +249,7 @@ export struct ProgressView {
   }
 
   build() {
-    Scroll() {
+    Scroll(this.scroller) {
       Column({ space: GAP }) {
         Text('Progress')
           .fontSize(32)
