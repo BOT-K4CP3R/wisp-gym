@@ -43,7 +43,7 @@ stored in this repository.
   reviewed project."
 
 ## How generated output was validated
-- `./scripts/test.sh`: 21 unit tests against the same source files the app compiles.
+- `./scripts/test.sh`: 22 unit tests (including a 300-set randomised synthetic sweep) against the same source files the app compiles.
 - Compiler: every change is built with hvigor (`BUILD SUCCESSFUL`); a hypium suite also compiles.
 - Test-driven fixes: a test showed walking was counted as reps; the detector was extended with cadence
   detection and the test now passes.

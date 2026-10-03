@@ -112,6 +112,8 @@ emulation, so it is slow), HAP built with hvigor against SDK 6.1, `compatibleSdk
 | System permission dialog for `ACTIVITY_MOTION` with the stated reason | yes |
 | Real accelerometer, pedometer, vibration, delivered notification | **not verifiable** on this emulator (no motion hardware); code paths exist and fail gracefully |
 | HarmonyOS device / DevEco Studio emulator | **not tested** |
+| Tapping the widget to open the app | **not verified**: the emulator's synthetic tap did not trigger the card's router action (code follows the documented `postCardAction`) |
+| `scripts/setup-macos.sh` from a clean machine | the same commands were run step by step; the script itself was not re-run end-to-end (disk space) |
 | New launcher icon after reinstall | file verified; the emulator launcher kept its cached icon |
 
 Reproduce the emulator run: `./scripts/build.sh && ./scripts/emulator-up.sh`, then
