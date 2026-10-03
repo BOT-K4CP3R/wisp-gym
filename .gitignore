@@ -18,3 +18,6 @@ local.properties
 *.csr
 .oniro/
 signing/
+dist/
+build-profile.json5.orig
+signatures/

@@ -2,15 +2,35 @@
   "string": [
     {
       "name": "module_desc",
-      "value": "module description"
+      "value": "Wisp Gym: a creature that grows from your real training"
     },
     {
       "name": "EntryAbility_desc",
-      "value": "description"
+      "value": "Wisp Gym main screen"
     },
     {
       "name": "EntryAbility_label",
-      "value": "label"
+      "value": "Wisp Gym"
+    },
+    {
+      "name": "reason_motion",
+      "value": "Wisp Gym reads your step count to show how much you moved today. Data stays on this phone."
+    },
+    {
+      "name": "widget_display_name",
+      "value": "Wisp"
+    },
+    {
+      "name": "widget_desc",
+      "value": "Your creature and training status at a glance."
+    },
+    {
+      "name": "WispFormAbility_label",
+      "value": "Wisp widget"
+    },
+    {
+      "name": "WispFormAbility_desc",
+      "value": "Home-screen widget for Wisp Gym"
     }
   ]
 }
