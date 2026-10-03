@@ -2,6 +2,7 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CreatureLook } from '../core/CreatureLook';
 import { AppModel, hslToHex } from '../app/AppModel';
 import { LookHolder } from './LookHolder';
+import { motionOn } from '../ui/Motion';
 
 function hexToRgb(hex: string): string {
   const r = parseInt(hex.substring(1, 3), 16);
@@ -29,18 +30,52 @@ export struct CreatureCanvas {
   private cw: number = 340;
   private ch: number = 320;
   private cur: CreatureLook = new CreatureLook();
+  private idleFrames: number = 0;
+  private lastW: number = 0;
+  private lastH: number = 0;
 
   aboutToAppear(): void {
     this.timer = setInterval(() => {
       if (!this.holder.active) {
         return; // hidden page: skip the frame entirely
       }
+      if (!motionOn() && !this.needsFrame()) {
+        return; // reduced motion: no idle animation, draw only when something changes
+      }
       try {
         this.draw();
       } catch (e) {
         hilog.error(0x00F0, 'WispCanvas', 'draw failed: %{public}s', JSON.stringify(e));
       }
-    }, 40);
+    }, motionOn() ? 40 : 66);
+  }
+
+  // With reduced motion the creature is still: frames are drawn only while it reacts to a tap,
+  // morphs to a new look, or its size changes.
+  private needsFrame(): boolean {
+    const now = Date.now();
+    if (now - this.holder.pokedAt < 1000) {
+      return true;
+    }
+    if (this.holder.snap || this.idleFrames < 3) {
+      this.idleFrames++;
+      return true;
+    }
+    const T = this.holder.look;
+    const C = this.cur;
+    const moving = Math.abs(T.legs - C.legs) + Math.abs(T.core - C.core) + Math.abs(T.push - C.push) +
+      Math.abs(T.pull - C.pull) + Math.abs(T.hue - C.hue) / 50 + Math.abs(T.eyeOpen - C.eyeOpen) +
+      Math.abs(T.smile - C.smile) > 0.01 || T.mood !== C.mood || T.happyEyes !== C.happyEyes;
+    if (moving) {
+      this.idleFrames = 0;
+      return true;
+    }
+    if (this.ctx.width !== this.lastW || this.ctx.height !== this.lastH) {
+      this.lastW = this.ctx.width;
+      this.lastH = this.ctx.height;
+      return true;
+    }
+    return false;
   }
 
   aboutToDisappear(): void {
