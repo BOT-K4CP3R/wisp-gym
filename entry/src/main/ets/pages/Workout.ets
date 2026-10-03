@@ -239,7 +239,7 @@ struct Workout {
 
   private subLabel(): string {
     if (this.phase === 'set') {
-      return 'reps';
+      return this.cue.length > 0 ? 'rack it' : 'reps';
     }
     if (this.phase === 'rest') {
       return this.restLeft > 0 ? 'rest' : 'rest over';
@@ -331,19 +331,12 @@ struct Workout {
             Text(this.subLabel())
               .fontSize(14)
               .fontFamily(F_BOLD)
-              .fontColor(TEXT_MUTE)
+              .fontColor(this.phase === 'set' && this.cue.length > 0 ? ACCENT : TEXT_MUTE)
           }
         }
         .width(240)
         .height(240)
 
-        if (this.cue.length > 0) {
-          Text(this.cue)
-            .fontSize(16)
-            .fontFamily(F_BOLD)
-            .fontColor(ACCENT)
-            .margin({ top: 16 })
-        }
         if (!this.sensorOk) {
           Text('Accelerometer unavailable. Turn on Demo mode in Settings.')
             .fontSize(12)

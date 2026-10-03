@@ -30,17 +30,17 @@ Everything is computed and stored **on the phone**. The app requests no network 
 
 ## Screenshots (OpenHarmony 6.1 emulator, Demo mode)
 
-| Home: curious (no history) | Home: thriving (14-day history) | Stop cue during a slowing set |
+| Home | Activity dots | Counting a set |
 |---|---|---|
-| ![](docs/screenshots/01-home-curious.jpeg) | ![](docs/screenshots/02-home-thriving.jpeg) | ![](docs/screenshots/03-workout-stop-cue.jpeg) |
+| ![](docs/screenshots/01-home-thriving.jpg) | ![](docs/screenshots/02-home-activity.jpg) | ![](docs/screenshots/03-set-counting.jpg) |
 
-| Rest timer after a fatiguing set | Over-training: Wisp asks for rest | "Why is Wisp like this?" |
+| "Rack it" cue | Over-training: Wisp rests | Insights |
 |---|---|---|
-| ![](docs/screenshots/04-rest-timer.jpeg) | ![](docs/screenshots/05-home-rest-day.jpeg) | ![](docs/screenshots/06-why-explainability.jpeg) |
+| ![](docs/screenshots/04-set-rack-it.jpg) | ![](docs/screenshots/05-home-resting.jpg) | ![](docs/screenshots/06-insights.jpg) |
 
-| Simulated 14-day evolution | Add widget (launcher menu) | Widget on the home screen |
+| Week | Settings | Home-screen widget |
 |---|---|---|
-| ![](docs/screenshots/07-week-evolution.jpeg) | ![](docs/screenshots/08-add-widget-menu.jpeg) | ![](docs/screenshots/09-home-screen-widget.jpeg) |
+| ![](docs/screenshots/07-week.jpg) | ![](docs/screenshots/08-settings.jpg) | ![](docs/screenshots/09-widget.jpg) |
 
 ## Platform capabilities used
 
@@ -108,7 +108,7 @@ emulation, so it is slow), HAP built with hvigor against SDK 6.1, `compatibleSdk
 |---|---|
 | HAP builds and is signed with the SDK development certificate | yes |
 | Installs and launches (`bm install`, `aa start`) | yes |
-| Home, Workout, Why, Week screens render; navigation works | yes |
+| Home, Workout, Insights, Week screens (monochrome bento UI) render; tab navigation works | yes |
 | Creature Canvas renders and reacts to history changes | yes (after fixing three issues found on the device, see AI_WORKFLOW.md) |
 | Demo set: 8 and 10 reps counted live by the detector, stop cue and explanation, auto-end after a pause, rest timer | yes |
 | Over-training: after a third session in 72 h Wisp shows the rest-day state | yes |
@@ -133,6 +133,12 @@ Reproduce the emulator run: `./scripts/build.sh && ./scripts/emulator-up.sh`, th
 - the fatigue cue fires exactly once for a slowing set and never for a steady one
 - creature rules: group growth, decay with a floor, rest request, recovery, future records ignored, never sad
 - session state machine and persistence, including corrupt or hostile stored JSON
+
+## Submission material
+
+- [submission/wisp-gym-presentation.pptx](submission/wisp-gym-presentation.pptx) (and `.pdf`): 11-slide deck
+- [submission/wisp-gym-demo.mp4](submission/wisp-gym-demo.mp4): 85 s narrated promo built from real emulator captures (`submission/make_video.py`, `make_deck.py` regenerate both)
+- [submission/FORM_ANSWERS.md](submission/FORM_ANSWERS.md): text for the HackYeah project form
 
 ## Documentation
 

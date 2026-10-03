@@ -22,3 +22,4 @@ dist/
 build-profile.json5.orig
 signatures/
 entry/.test/
+submission/.video-tmp/

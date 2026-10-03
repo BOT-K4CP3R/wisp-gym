@@ -184,7 +184,7 @@ struct Index {
             Column() {
               Tile({ pad: 20 }) {
                 RingNumber({ value: this.state.train, diameter: 60 })
-                Blank().height(28)
+                Blank().height(16)
                 TitleBlock({ title: 'Strength', subtitle: '7-day load' })
               }
             }
@@ -196,7 +196,7 @@ struct Index {
                   .fontFamily(F_BOLD)
                   .fontColor(TEXT)
                   .height(60)
-                Blank().height(28)
+                Blank().height(16)
                 TitleBlock({ title: 'Move', subtitle: 'Steps today' })
               }
             }

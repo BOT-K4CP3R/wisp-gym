@@ -32,8 +32,10 @@ export function lookFor(state: CreatureState, seed: number): CreatureLook {
       dominant = i;
     }
   }
-  const base = (Math.abs(seed) % 360);
-  look.hue = (base + dominant * 22) % 360;
+  // Hue stays in the warm coral-to-amber family so the creature always matches the app accent;
+  // the seed gives each creature its own shade, the dominant muscle group nudges it.
+  const base = 8 + (Math.abs(seed) % 14);
+  look.hue = base + dominant * 6;
   look.glow = clamp(0.25 + 0.5 * state.recover + 0.25 * state.move, 0, 1);
   look.mood = state.mood;
 

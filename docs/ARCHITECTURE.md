@@ -44,9 +44,9 @@ day baseline), `PrefsStore` (`@ohos.data.preferences`), `Haptics` (vibrator), `N
 Each adapter degrades gracefully: no sensor → clear message; no vibrator → silent; no permission → feature off.
 
 ### UI
-- `Index` home: creature, three stats, entry points, demo controls.
-- `Workout`: exercise chips, live rep counter, fatigue bar, stop cue, rest timer, finish.
-- `Why`: every number behind the creature's state (explainability).
+- `Index` home: bento tiles (creature, Strength ring, Move, Recovery, 5-week activity dots), tab bar, settings sheet.
+- `Workout`: exercise picker sheet, live rep ring (turns accent at the stop cue), info rows, rest timer.
+- `Why` ("Insights"): every number behind the creature's state (explainability).
 - `Week`: recent sessions and a *simulated* 14-day evolution time-lapse.
 - `widget/WispCard` (2×2, 2×4): a creature built from rounded boxes (cards cannot host a Canvas), refreshed by
   `formProvider.updateForm` after every workout and by the scheduled update.
