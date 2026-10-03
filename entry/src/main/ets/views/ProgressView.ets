@@ -51,11 +51,14 @@ function hhmm(ms: number): string {
 }
 
 function deltaText(now: number, prev: number): string {
+  if (now === 0 && prev === 0) {
+    return ' ';
+  }
   const d = now - prev;
   if (d === 0) {
-    return 'same as last week';
+    return 'same as last wk';
   }
-  return (d > 0 ? '+' : '') + d + ' vs last week';
+  return (d > 0 ? '+' : '') + d + ' vs last wk';
 }
 
 @Component
@@ -165,6 +168,13 @@ export struct ProgressView {
       day--;
       if (day < 1) {
         this.stopTimeLapse();
+        // Hold the final day for a moment, then morph back to the user's own creature.
+        setTimeout(() => {
+          if (!this.playing) {
+            this.holder.set(AppModel.get().lookFor(AppModel.get().evaluateNow()), false);
+            this.lapseLabel = '';
+          }
+        }, 2500);
       }
     };
     step();
@@ -262,6 +272,7 @@ export struct ProgressView {
               Text(this.maxReps() > 1 ? 'max ' + this.maxReps() : '').fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE)
             }
             .width('100%')
+            Stack() {
             Row({ space: 10 }) {
               ForEach(this.bars, (b: DayBar, idx: number) => {
                 Column({ space: 6 }) {
@@ -284,6 +295,15 @@ export struct ProgressView {
                 .justifyContent(FlexAlign.End)
                 .height(140)
               }, (b: DayBar, idx: number) => '' + idx + '-' + b.reps)
+            }
+            .width('100%')
+            if (this.maxReps() <= 1 && this.bars.every((b: DayBar) => b.reps === 0)) {
+              Text('No reps in the last 7 days yet')
+                .fontSize(13)
+                .fontFamily(F_REG)
+                .fontColor(TEXT_MUTE)
+                .margin({ bottom: 40 })
+            }
             }
             .width('100%')
             .margin({ top: 12 })

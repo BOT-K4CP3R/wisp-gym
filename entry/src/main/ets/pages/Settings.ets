@@ -154,7 +154,7 @@ struct Settings {
   StepperRow(title: string, key: string, divider: boolean) {
     Column() {
       Row({ space: 10 }) {
-        Text(title).fontSize(16).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
+        Text(title).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1).maxLines(1)
         IconButton({ icon: $r('app.media.ic_minus'), label: 'Decrease ' + title, diameter: 36, onTap: () => {
           if (key === 'weekly') {
             this.setWeekly(-1);
@@ -166,7 +166,7 @@ struct Settings {
           .fontSize(17)
           .fontFamily(F_BOLD)
           .fontColor(TEXT)
-          .width(56)
+          .width(44)
           .textAlign(TextAlign.Center)
         IconButton({ icon: $r('app.media.ic_plus'), label: 'Increase ' + title, diameter: 36, onTap: () => {
           if (key === 'weekly') {
@@ -199,7 +199,6 @@ struct Settings {
         .backgroundColor(SURFACE_HI)
         .borderRadius(16)
         .padding({ left: 16, right: 16 })
-        .defaultFocus(true)
         .enterKeyType(EnterKeyType.Done)
         .onChange((v: string) => {
           this.draftName = v;
@@ -284,7 +283,7 @@ struct Settings {
           SectionLabel({ text: 'Goals' })
           Tile({ pad: 6 }) {
             Column() {
-              this.StepperRow('Sessions per week', 'weekly', true)
+              this.StepperRow('Weekly sessions', 'weekly', true)
               this.StepperRow('Daily steps', 'steps', false)
             }
             .padding({ left: 14, right: 14 })
@@ -305,7 +304,7 @@ struct Settings {
               this.ToggleRow('Demo mode', 'Simulated motion and steps, for emulators', 'demo', true)
               NavRow({
                 icon: $r('app.media.ic_flask'),
-                title: 'Load 2-week sample history',
+                title: 'Load sample history',
                 divider: false,
                 onTap: () => this.ask('sample')
               })

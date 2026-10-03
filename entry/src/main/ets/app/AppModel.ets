@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { formProvider, formBindingData } from '@kit.FormKit';
 import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BusinessError } from '@kit.BasicServicesKit';
 import { HistoryStore, KeyValueStore, MemoryStore } from '../core/Store';
 import { LifeEngine, LifeConfig, CreatureState } from '../core/LifeEngine';
 import { CreatureLook, lookFor } from '../core/CreatureLook';
@@ -21,6 +22,7 @@ const KEY_DEMO = 'demo.mode';
 const KEY_FORMS = 'form.ids';
 const KEY_STEPS = 'steps.today';
 const DEMO_SEED = 20261003;
+const FORM_NOT_EXIST = 16501001;
 
 // AppStorage key used to route a widget tap (or other deep link) to a screen.
 export const NAV_TARGET = 'wisp.navTarget';
@@ -170,6 +172,7 @@ export class AppModel {
   // Erases history, profile and demo mode: the app starts over with the introduction.
   resetAll(): void {
     this.store.clear();
+    this.store.resetSeed();
     this.kv.put(KEY_DEMO, '0');
     this.kv.put(KEY_STEPS, '');
     this.profiles.save(new Profile());
@@ -346,8 +349,11 @@ export class AppModel {
     }
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      formProvider.updateForm(id, data).catch((e: Error) => {
-        hilog.warn(DOMAIN, TAG, 'updateForm %{public}s failed: %{public}s', id, e.message);
+      formProvider.updateForm(id, data).catch((e: BusinessError) => {
+        hilog.warn(DOMAIN, TAG, 'updateForm %{public}s failed: %{public}d %{public}s', id, e.code, e.message);
+        if (e.code === FORM_NOT_EXIST) {
+          this.unregisterForm(id); // the widget was removed from the home screen
+        }
       });
     }
   }

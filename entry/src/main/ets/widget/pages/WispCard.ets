@@ -56,7 +56,7 @@ struct WispCard {
 
       Stack() {
         MiniWisp({
-          scaleBy: 0.74,
+          scaleBy: 0.64,
           eyes: this.eyes,
           sparkle: this.sparkle,
           hue: this.hue,

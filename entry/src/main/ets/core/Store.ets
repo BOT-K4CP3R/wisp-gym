@@ -89,6 +89,11 @@ export class HistoryStore {
     this.kv.put(KEY_WORKOUTS, '');
   }
 
+  // A new creature: the next seed() call picks a fresh personal shade.
+  resetSeed(): void {
+    this.kv.put(KEY_SEED, '');
+  }
+
   private sanitizeWorkout(raw: WorkoutRecord): WorkoutRecord | null {
     if (raw === null || raw === undefined || !(raw.sets instanceof Array)) {
       return null;

@@ -26,21 +26,40 @@ struct WispWide {
   @LocalStorageProp('week') week: string = '0/3';
   @LocalStorageProp('demo') demo: boolean = false;
 
+  private label(key: string): string {
+    return key === 'train' ? 'Strength' : (key === 'recover' ? 'Recovery' : 'Steps');
+  }
+
+  private valueText(key: string): string {
+    if (key === 'train') {
+      return this.train + '%';
+    }
+    if (key === 'recover') {
+      return this.recover + '%';
+    }
+    return this.stepsKnown ? this.steps : 'off';
+  }
+
+  private pct(key: string): number {
+    return key === 'train' ? this.train : (key === 'recover' ? this.recover : (this.stepsKnown ? this.move : 0));
+  }
+
+  // Reads state inside the builder (not via parameters) so updates re-render it.
   @Builder
-  Metric(label: string, value: string, pct: number, warn: boolean) {
+  Metric(key: string) {
     Column({ space: 3 }) {
       Row() {
-        Text(label).fontSize(10).fontColor('#A1A1AA').layoutWeight(1)
-        Text(value).fontSize(10).fontWeight(FontWeight.Bold).fontColor('#F4F4F5')
+        Text(this.label(key)).fontSize(10).fontColor('#A1A1AA').layoutWeight(1)
+        Text(this.valueText(key)).fontSize(10).fontWeight(FontWeight.Bold).fontColor('#F4F4F5')
       }
       .width('100%')
       Stack({ alignContent: Alignment.Start }) {
         Column().width('100%').height(4).borderRadius(2).backgroundColor('#26FFFFFF')
         Column()
-          .width(Math.max(4, Math.min(100, pct)) + '%')
+          .width(Math.max(4, Math.min(100, this.pct(key))) + '%')
           .height(4)
           .borderRadius(2)
-          .backgroundColor(warn ? '#FF8A5B' : '#F4F4F5')
+          .backgroundColor(key === 'recover' && this.recover < 25 ? '#FF8A5B' : '#F4F4F5')
       }
       .width('100%')
     }
@@ -51,7 +70,7 @@ struct WispWide {
     Row({ space: 12 }) {
       Stack() {
         MiniWisp({
-          scaleBy: 1.0,
+          scaleBy: 0.9,
           eyes: this.eyes,
           sparkle: this.sparkle,
           hue: this.hue,
@@ -88,18 +107,24 @@ struct WispWide {
           }
         }
         .width('100%')
-        Text(this.nextTitle + '  ·  week ' + this.week)
-          .fontSize(11)
-          .fontColor('#FF8A5B')
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-          .width('100%')
-          .margin({ top: 2 })
+        Row({ space: 6 }) {
+          Text(this.nextTitle)
+            .fontSize(11)
+            .fontColor('#FF8A5B')
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .layoutWeight(1)
+          Text('week ' + this.week)
+            .fontSize(10)
+            .fontColor('#A1A1AA')
+        }
+        .width('100%')
+        .margin({ top: 2 })
         Blank()
         Column({ space: 7 }) {
-          this.Metric('Strength', this.train + '%', this.train, false)
-          this.Metric('Recovery', this.recover + '%', this.recover, this.recover < 25)
-          this.Metric('Steps', this.stepsKnown ? this.steps : 'off', this.move, false)
+          this.Metric('train')
+          this.Metric('recover')
+          this.Metric('steps')
         }
         .width('100%')
       }
