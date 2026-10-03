@@ -21,3 +21,4 @@ signing/
 dist/
 build-profile.json5.orig
 signatures/
+entry/.test/
