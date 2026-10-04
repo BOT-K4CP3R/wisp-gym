@@ -10,3 +10,10 @@
 | [`@napi-rs/canvas`](https://github.com/Brooooooklyn/canvas) | renders the splash image and launcher icon from the app's drawing code (`scripts/render-creature.mjs`; tooling only, installed outside the repo, not shipped) | MIT |
 
 The app icon, the six creatures and their expressions, UI and all source code were created for this project (MIT, see `LICENSE`).
+
+Promo video tooling (`submission/promo`, not shipped in the app):
+
+| Component | Use | License |
+|---|---|---|
+| [Remotion](https://www.remotion.dev/) 4, React 19 | renders the silent promo video | Remotion License (free for individuals and small teams), MIT |
+| [remotion-motion-graphics skill](https://github.com/haidrrrry/claude-remotion-skill) | Claude Code skill with motion-design rules used to build the promo | see its repository |

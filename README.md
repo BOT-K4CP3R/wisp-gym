@@ -177,7 +177,7 @@ entry/src/main/ets/views/       Home, Progress, Insights tabs
 entry/src/main/ets/widget/      2x2 and 2x4 home-screen cards, shared mini creature
 tests/                          Node tests (74) + hypium suite in entry/src/test
 scripts/                        setup, build, test, emulator + browser remote, splash/icon rendering
-submission/                     scripts that build the demo video and presentation from real emulator captures
+submission/                     scripts that build the demo video and presentation from real emulator captures; promo/ = silent Remotion promo
 docs/                           architecture, demo script, UX research, screenshots
 ```
 

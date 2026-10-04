@@ -15,6 +15,7 @@ stored in this repository.
 | Claude Code built-in browser pane | checking the emulator remote page layout |
 | Claude Code built-in tools: Bash, file Read/Write/Edit, WebSearch, WebFetch | running builds/tests, writing files, looking up OpenHarmony API docs |
 | claude-mem `work_state` (task list) | tracking progress across the session |
+| Agent Skill `remotion-motion-graphics` ([haidrrrry/claude-remotion-skill](https://github.com/haidrrrry/claude-remotion-skill)), installed at the user's request | motion-design rules (springs, staggered entrances, grade/grain/vignette, render-and-inspect loop) for the silent Remotion promo in `submission/promo` |
 | MCP servers / Agent Skills from the challenge repository | **not used**: the installer prompt in `onirodeveloper/hackyeah2026-challenge` is Windows-only; this project was built on macOS without DevEco Studio. The challenge repo's README, FAQ, and slides were read by the agent. |
 | Oniro App Builder CLI (`@oniroproject/oniro-app`), OpenHarmony SDK 6.1, hvigor/ohpm | open-source build chain (not AI) |
 
