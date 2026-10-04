@@ -19,6 +19,19 @@ const STEP_FX: TransitionEffect = TransitionEffect.asymmetric(
 );
 const NAMES: string[] = ['Wisp', 'Mochi', 'Ember', 'Pip', 'Nova', 'Bao'];
 const STARTERS: Species[] = SPECIES.filter((s: Species) => s.unlock.length === 0);
+const LATER: Species[] = SPECIES.filter((s: Species) => s.unlock.length > 0);
+
+// Sleeping preview of a creature that hatches later.
+function sleeper(sp: Species): LookHolder {
+  const h = new LookHolder();
+  const look = new CreatureLook();
+  look.species = sp.id;
+  look.hue = sp.hueBase;
+  look.expression = 'asleep';
+  h.set(look, true);
+  return h;
+}
+const SLEEPERS: LookHolder[] = LATER.map((sp: Species) => sleeper(sp));
 const WEEKLY: number[] = [2, 3, 4, 5];
 const STEP_GOALS: number[] = [6000, 8000, 10000, 12000];
 
@@ -320,6 +333,26 @@ struct Onboarding {
           .fontColor(TEXT_DIM)
           .width('100%')
           .lineHeight(20)
+        Row({ space: 10 }) {
+          ForEach(LATER, (sp: Species, i: number) => {
+            Column() {
+              CreatureCanvas({ holder: SLEEPERS[i], label: '', canvasHeight: 40, portrait: true, still: true })
+            }
+            .width(40)
+            .height(40)
+            .borderRadius(20)
+            .backgroundColor(SURFACE_HI)
+            .clip(true)
+            .opacity(0.55)
+          }, (sp: Species) => 'later-' + sp.id)
+          Text(LATER.length + ' more hatch as you train')
+            .fontSize(13)
+            .fontFamily(F_BOLD)
+            .fontColor(TEXT_MUTE)
+            .layoutWeight(1)
+        }
+        .width('100%')
+        .margin({ top: 8 })
       }
       .transition(fx(STEP_FX))
     } else if (this.stepId() === 'name') {
