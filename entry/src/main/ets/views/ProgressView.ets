@@ -3,12 +3,14 @@ import { LifeEngine, CreatureState } from '../core/LifeEngine';
 import { lookFor } from '../core/CreatureLook';
 import { WorkoutRecord, SetRecord, findExercise } from '../core/Types';
 import { generateHistory } from '../core/Sim';
-import { Records, WeekStats, dayLabel, formatDuration, records, repsOf } from '../core/Plan';
+import { Records, WeekStats, dayLabel, formatDuration, plural, records, repsOf } from '../core/Plan';
 import { groupThousands } from '../core/Types';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, EmptyState, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
-import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
+import {
+  ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_MID, HAIRLINE
+} from '../ui/Theme';
 import { anim, press } from '../ui/Motion';
 
 const DAY_LETTERS: string[] = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -71,8 +73,20 @@ struct RecordCell {
 
   build() {
     Column({ space: 2 }) {
-      Text(this.value).fontSize(20).fontFamily(F_BOLD).fontColor(TEXT).maxLines(1)
-      Text(this.label).fontSize(11).fontFamily(F_REG).fontColor(TEXT_MUTE).maxLines(1)
+      Text(this.value)
+        .fontSize(20)
+        .maxFontSize(20)
+        .minFontSize(12)
+        .fontFamily(F_BOLD)
+        .fontColor(TEXT)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Text(this.label)
+        .fontSize(11)
+        .fontFamily(F_REG)
+        .fontColor(TEXT_MUTE)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
     }
     .alignItems(HorizontalAlign.Start)
     .width('100%')
@@ -183,6 +197,7 @@ export struct ProgressView {
     const now = Date.now();
     const all: WorkoutRecord[] = generateHistory(now, 14, 20261003);
     const seed = AppModel.get().seed();
+    const species = AppModel.get().profile().species;
     const engine = new LifeEngine(AppModel.get().config());
     let day = 14;
     this.playing = true;
@@ -190,7 +205,7 @@ export struct ProgressView {
       const t = now - (day - 1) * 86400000;
       const upTo: WorkoutRecord[] = all.filter((w: WorkoutRecord) => w.endMs <= t);
       const st: CreatureState = engine.evaluate(t, upTo, 5200);
-      this.holder.set(lookFor(st, seed), false);
+      this.holder.set(lookFor(st, seed, species), false);
       this.lapseLabel = 'Simulated journey  ·  day ' + (15 - day) + ' of 14';
       day--;
       if (day < 1) {
@@ -210,8 +225,8 @@ export struct ProgressView {
 
   private openDetail(row: SessionRow): void {
     this.detailTitle = row.day + ', ' + row.time;
-    this.detailMeta = formatDuration(row.workout.endMs - row.workout.startMs) + '  ·  ' + row.sets +
-      (row.sets === 1 ? ' set' : ' sets') + '  ·  ' + row.reps + ' reps' + (row.simulated ? '  ·  simulated' : '');
+    this.detailMeta = formatDuration(row.workout.endMs - row.workout.startMs) + '  ·  ' +
+      plural(row.sets, 'set') + '  ·  ' + plural(row.reps, 'rep') + (row.simulated ? '  ·  simulated' : '');
     this.detailSets = row.workout.sets;
     this.showDetail = true;
   }
@@ -264,7 +279,7 @@ export struct ProgressView {
       .width('100%')
       .margin({ top: 14 })
       Row({ space: 8 }) {
-        RecordCell({ value: '' + this.rec.bestSession, label: 'best session reps' })
+        RecordCell({ value: '' + this.rec.bestSession, label: 'best session' })
           .layoutWeight(1)
         RecordCell({ value: this.rec.longestMs > 0 ? formatDuration(this.rec.longestMs) : '-', label: 'longest session' })
           .layoutWeight(1)
@@ -287,7 +302,7 @@ export struct ProgressView {
             InfoRow({
               label: 'Set ' + (i + 1) + '  ·  ' + findExercise(s.exercise).name,
               sub: 'Fatigue ' + Math.round(s.fatigue * 100) + '%  ·  tempo ' + Math.round(s.quality * 100) + '% steady',
-              value: s.reps + ' reps',
+              value: plural(s.reps, 'rep'),
               divider: i < this.detailSets.length - 1,
               strong: s.fatigue >= 0.25
             })
@@ -345,7 +360,7 @@ export struct ProgressView {
                     .width('100%')
                     .height(Math.max(4, Math.round(96 * b.reps / this.maxReps())))
                     .borderRadius(6)
-                    .backgroundColor(b.reps > 0 ? (b.today ? ACCENT : '#B8623F') : TRACK)
+                    .backgroundColor(b.reps > 0 ? (b.today ? ACCENT : ACCENT_MID) : TRACK)
                     .animation(anim({ duration: 500, curve: Curve.Friction, delay: idx * 40 }))
                   Text(b.label)
                     .fontSize(11)
@@ -355,7 +370,7 @@ export struct ProgressView {
                 .layoutWeight(1)
                 .justifyContent(FlexAlign.End)
                 .height(140)
-              }, (b: DayBar, idx: number) => '' + idx + '-' + b.reps)
+              }, (b: DayBar, idx: number) => '' + idx + b.label + (b.today ? 't' : 'f') + '-' + b.reps)
             }
             .width('100%')
             if (this.maxReps() <= 1 && this.bars.every((b: DayBar) => b.reps === 0)) {
@@ -436,7 +451,7 @@ export struct ProgressView {
                   .alignItems(HorizontalAlign.Start)
                   .layoutWeight(1)
                   Column() {
-                    Text(row.reps + ' reps').fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).maxLines(1)
+                    Text(plural(row.reps, 'rep')).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).maxLines(1)
                     Text(row.sets + (row.sets === 1 ? ' set' : ' sets') + (row.simulated ? '  ·  sim' : ''))
                       .fontSize(12)
                       .fontFamily(F_REG)
@@ -450,7 +465,7 @@ export struct ProgressView {
                 .width('100%')
                 .padding({ left: 14, right: 12, top: 12, bottom: 12 })
                 if (idx < this.sessions.length - 1) {
-                  Divider().color('#1FFFFFFF').strokeWidth(1).margin({ left: 14, right: 14 })
+                  Divider().color(HAIRLINE).strokeWidth(1).margin({ left: 14, right: 14 })
                 }
               }
               .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))

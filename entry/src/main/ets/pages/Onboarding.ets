@@ -9,7 +9,7 @@ import { Button56, Chip, IconButton } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
 import { RouteParams, navReplace } from '../ui/Nav';
 import {
-  ACCENT, ACCENT_TINT, BG, DUR_MED, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
+  ACCENT, ACCENT_TINT, BG, DUR_MED, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_BORDER
 } from '../ui/Theme';
 import { anim, fx, press } from '../ui/Motion';
 
@@ -17,7 +17,8 @@ const STEP_FX: TransitionEffect = TransitionEffect.asymmetric(
   TransitionEffect.OPACITY.combine(TransitionEffect.translate({ x: 36 })),
   TransitionEffect.OPACITY
 );
-const NAMES: string[] = ['Wisp', 'Mochi', 'Ember', 'Pip', 'Nova', 'Bao'];
+// Name ideas besides the species' own name (never another species' name).
+const NAMES: string[] = ['Bao', 'Tofu', 'Kiki', 'Bean', 'Nori'];
 const STARTERS: Species[] = SPECIES.filter((s: Species) => s.unlock.length === 0);
 const LATER: Species[] = SPECIES.filter((s: Species) => s.unlock.length > 0);
 
@@ -167,6 +168,7 @@ struct Onboarding {
     const p: Profile = model.profile();
     p.name = sanitizeName(this.name);
     p.species = this.species;
+    p.motionAsked = true; // the permissions step offered it (Allow or Not now)
     p.weeklyGoal = this.weekly;
     p.stepGoal = this.stepGoal;
     p.onboarded = true;
@@ -272,7 +274,7 @@ struct Onboarding {
     .padding(18)
     .borderRadius(22)
     .backgroundColor(this.useDemo === demo ? ACCENT_TINT : SURFACE)
-    .border({ width: 1, color: this.useDemo === demo ? '#66FF8A5B' : HAIRLINE })
+    .border({ width: 1, color: this.useDemo === demo ? ACCENT_BORDER : HAIRLINE })
     .animation(anim({ duration: 180, curve: Curve.EaseOut }))
     .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.97 }))
     .accessibilityText(title + (this.useDemo === demo ? ', selected' : ''))
@@ -320,7 +322,7 @@ struct Onboarding {
             .justifyContent(FlexAlign.Center)
             .borderRadius(24)
             .backgroundColor(this.species === sp.id ? ACCENT_TINT : SURFACE_HI)
-            .border({ width: 1, color: this.species === sp.id ? '#66FF8A5B' : HAIRLINE })
+            .border({ width: 1, color: this.species === sp.id ? ACCENT_BORDER : HAIRLINE })
             .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.94 }))
             .accessibilityText(sp.name + (this.species === sp.id ? ', selected' : ''))
             .onClick(() => this.pickSpecies(sp.id))
@@ -336,7 +338,8 @@ struct Onboarding {
         Row({ space: 10 }) {
           ForEach(LATER, (sp: Species, i: number) => {
             Column() {
-              CreatureCanvas({ holder: SLEEPERS[i], label: '', canvasHeight: 40, portrait: true, still: true })
+              CreatureCanvas({ holder: SLEEPERS[i], label: '', canvasHeight: 40, portrait: true, still: true,
+                a11y: sp.name + ', hatches later' })
             }
             .width(40)
             .height(40)
@@ -381,7 +384,7 @@ struct Onboarding {
             }
           })
         Flex({ wrap: FlexWrap.Wrap }) {
-          ForEach(NAMES, (n: string) => {
+          ForEach([findSpecies(this.species).name].concat(NAMES), (n: string) => {
             Chip({ text: n, selected: this.name === n, onTap: () => {
               this.name = n;
               this.holder.poke();
@@ -488,7 +491,8 @@ struct Onboarding {
             .fontSize(14)
             .fontFamily(F_BOLD)
             .fontColor(TEXT_DIM)
-            .width(40)
+            .width(48)
+            .height(40)
             .textAlign(TextAlign.End)
             .accessibilityText('Skip introduction')
             .onClick(() => this.go(2))

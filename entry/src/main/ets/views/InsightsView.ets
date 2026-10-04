@@ -152,7 +152,7 @@ export struct InsightsView {
                   MetricBar({
                     label: GROUP_NAMES[i],
                     value: this.state.levels[i],
-                    color: this.state.levels[i] >= 0.4 ? TEXT : ACCENT,
+                    color: this.state.levels[i] >= 0.4 ? TEXT : TEXT_DIM,
                     delay: 150 + i * 60
                   })
                   Text(this.reason('group-' + g).target)

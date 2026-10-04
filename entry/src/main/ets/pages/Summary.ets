@@ -1,11 +1,13 @@
 import { AppModel } from '../app/AppModel';
 import { CreatureState } from '../core/LifeEngine';
-import { ExerciseLine, GroupGain, WorkoutSummary, formatDuration } from '../core/Plan';
+import { ExerciseLine, GroupGain, WorkoutSummary, formatDuration, joinAnd, plural } from '../core/Plan';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
-import { ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, TEXT, TEXT_DIM, TEXT_MUTE, TRACK } from '../ui/Theme';
+import {
+  ACCENT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_SOFT
+} from '../ui/Theme';
 import { anim, pageDur } from '../ui/Motion';
 
 // End-of-workout celebration: the creature reacts first, then the numbers, then what grew.
@@ -21,7 +23,10 @@ struct Summary {
     registerFonts(this.getUIContext());
     const model = AppModel.get();
     const s = model.lastSummary();
-    if (s !== null) {
+    if (s === null) {
+      // Nothing to celebrate (e.g. the page was restored without a workout): go back.
+      setTimeout(() => this.getUIContext().getRouter().back(), 0);
+    } else {
       this.summary = s;
     }
     this.name = model.profile().name;
@@ -74,7 +79,7 @@ struct Summary {
       return 'Workout saved';
     }
     const names = this.summary.gains.map((g: GroupGain) => g.label.toLowerCase());
-    return this.name + ' grew: ' + names.join(' and ');
+    return this.name + ' grew: ' + joinAnd(names);
   }
 
   @Builder
@@ -82,9 +87,12 @@ struct Summary {
     Column({ space: 2 }) {
       Text(value)
         .fontSize(28)
+        .maxFontSize(28)
+        .minFontSize(15)
         .fontFamily(F_BOLD)
         .fontColor(TEXT)
         .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
       Text(label).fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE)
     }
     .alignItems(HorizontalAlign.Start)
@@ -192,7 +200,7 @@ struct Summary {
                     .height(44)
                     .padding(11)
                     .borderRadius(22)
-                    .backgroundColor('#26FF8A5B')
+                    .backgroundColor(ACCENT_SOFT)
                   Column({ space: 3 }) {
                     Text(this.summary.newSpecies.length > 0 ? 'New creature hatched!' : 'New badge earned!')
                       .fontSize(17)
@@ -231,8 +239,8 @@ struct Summary {
               ForEach(this.summary.exercises, (e: ExerciseLine, i: number) => {
                 InfoRow({
                   label: e.name,
-                  value: e.reps + ' reps',
-                  sub: e.sets + (e.sets === 1 ? ' set' : ' sets'),
+                  value: plural(e.reps, 'rep'),
+                  sub: plural(e.sets, 'set'),
                   divider: i < this.summary.exercises.length - 1
                 })
               }, (e: ExerciseLine) => e.name)

@@ -101,7 +101,7 @@ function validSessions(workouts: WorkoutRecord[], nowMs: number): Session[] {
 }
 
 export function evaluateAchievements(workouts: WorkoutRecord[], nowMs: number, weeklyGoal: number,
-  stepsBestDay: number): Achievement[] {
+  stepsBestDay: number, stepsBestAt?: number): Achievement[] {
   const goal = Math.max(1, Math.round(weeklyGoal > 0 ? weeklyGoal : 1));
   const list: Achievement[] = [
     new Achievement('first-set', 'First spark', 'Record your first set.', 'bolt', 1),
@@ -203,7 +203,8 @@ export function evaluateAchievements(workouts: WorkoutRecord[], nowMs: number, w
     }
   }
 
-  bump(steps, Math.max(0, stepsBestDay), nowMs);
+  // Unlock time = the day of the best step count (when known), not "now".
+  bump(steps, Math.max(0, stepsBestDay), stepsBestAt !== undefined && stepsBestAt > 0 ? stepsBestAt : nowMs);
   return list;
 }
 

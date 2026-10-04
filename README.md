@@ -55,7 +55,12 @@ Built for **HackYeah 2026 / Huawei Challenge "Imagine What's Next"**. Lead area:
 9. **Friendly first run.** Meet and name your creature, set a gentle weekly goal, permission primers, and a choice
    between real sensors and a clearly labelled demo.
 10. **Two home-screen widgets** (2x2 mood mirror, 2x4 with next step, strength, recovery and steps) that open the app.
-11. **Accessible.** Reduce-motion setting (default on emulators that render in software), AA contrast, labelled controls.
+11. **Six creatures, eleven faces.** Pick a starter (Wisp, Mochi or Pip); Ember, Nova and Moss hatch from
+    training badges. Faces follow the moment: focused during a set, straining at the stop cue, proud after it,
+    asleep on rest days. A small coach creature reacts live during the workout.
+12. **Badges, levels and records.** 14 badges (never taken away), a level from every rep ever counted, and all-time
+    personal records.
+13. **Accessible.** Reduce-motion setting (default on emulators that render in software), AA contrast, labelled controls.
 
 Everything is computed and stored **on the phone**. The app requests no network permission.
 
@@ -94,7 +99,7 @@ Requirements: macOS or Linux, Node.js ≥ 22, JDK 17. **DevEco Studio is not req
 
 ```bash
 ./scripts/setup-macos.sh     # one-time: OpenHarmony SDK 6.1 (API 23), hvigor, ohpm (macOS; on Linux use `oniro-app cmdtools install`)
-./scripts/test.sh            # 35 unit tests on plain Node, no SDK needed
+./scripts/test.sh            # 52 unit tests on plain Node, no SDK needed
 ./scripts/build.sh           # signed debug HAP -> dist/wisp-gym.hap (throw-away development certificate, never committed)
 ./scripts/emulator-up.sh     # start the Oniro emulator (macOS: brew install qemu), install and launch
 ```
@@ -125,7 +130,7 @@ from the same source files. OS access is isolated in `platform/`. See [docs/ARCH
 | Both widgets added from the launcher, updated after workouts and settings changes | yes (emulator) |
 | Tapping a widget opens the app | yes (emulator) |
 | System permission dialog for `ACTIVITY_MOTION` with a stated reason | yes |
-| Unit tests | 35 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
+| Unit tests | 52 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
 | **Real** accelerometer / pedometer / vibration data | **not verifiable** on an emulator; code paths exist and fail gracefully |
 | Rep accuracy on real bodies | **not measured**; the sweep above is on synthetic traces |
 | HarmonyOS device, DevEco emulator | **not tested** |
@@ -135,13 +140,14 @@ First launch on the software-emulated Oniro emulator can take about a minute; it
 ## Project layout
 
 ```
-entry/src/main/ets/core/        pure logic: RepDetector, SetAnalyzer, WorkoutSession, LifeEngine, Plan, Mood, Profile, Store, Sim
+entry/src/main/ets/core/        pure logic: RepDetector, SetAnalyzer, WorkoutSession, LifeEngine, Plan, Mood, Profile,
+                                Species, Achievements, Store, Sim
 entry/src/main/ets/platform/    sensors, pedometer, preferences, haptics, notifications
 entry/src/main/ets/ui/          design tokens, components, motion policy, fonts, navigation helpers
-entry/src/main/ets/pages/       Index (tab shell), Onboarding, Workout, Summary, Settings
+entry/src/main/ets/pages/       Index (tab shell), Onboarding, Workout, Summary, Settings, Collection
 entry/src/main/ets/views/       Home, Progress, Insights tabs
 entry/src/main/ets/widget/      2x2 and 2x4 home-screen cards, shared mini creature
-tests/                          Node tests (35) + hypium suite in entry/src/test
+tests/                          Node tests (52) + hypium suite in entry/src/test
 scripts/                        setup, build, test, emulator + browser remote, splash/icon rendering
 submission/                     scripts that build the demo video and presentation from real emulator captures
 docs/                           architecture, demo script, UX research, screenshots

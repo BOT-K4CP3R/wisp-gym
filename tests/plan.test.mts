@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LifeEngine, LifeConfig } from '../.test-build/core/LifeEngine.ts';
-import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup, records, levelFor } from '../.test-build/core/Plan.ts';
+import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup, records, levelFor, plural, joinAnd } from '../.test-build/core/Plan.ts';
 import { moodInfo, MOODS } from '../.test-build/core/Mood.ts';
 import { Profile, ProfileStore, sanitizeName, reducedMotion } from '../.test-build/core/Profile.ts';
 import { MemoryStore } from '../.test-build/core/Store.ts';
@@ -226,4 +226,21 @@ test('levels: cumulative XP, growing level size, never below 1', () => {
   assert.equal(levelFor(99).level, 2);
   assert.equal(levelFor(100).level, 3);
   assert.equal(levelFor(1000000).level, 99);
+});
+
+test('labels: plurals and natural lists', () => {
+  assert.equal(plural(1, 'rep'), '1 rep');
+  assert.equal(plural(0, 'rep'), '0 reps');
+  assert.equal(plural(12, 'set'), '12 sets');
+  assert.equal(joinAnd([]), '');
+  assert.equal(joinAnd(['legs']), 'legs');
+  assert.equal(joinAnd(['legs', 'pull']), 'legs and pull');
+  assert.equal(joinAnd(['legs', 'pull', 'core']), 'legs, pull and core');
+});
+
+test('movement reason says Off when the step sensor is unavailable', () => {
+  const st = new LifeEngine(cfg).evaluate(NOW, [], -1);
+  const r = st.reasons.find((x: { key: string }) => x.key === 'move');
+  assert.equal(r.value, 'Off');
+  assert.equal(st.move, 0);
 });

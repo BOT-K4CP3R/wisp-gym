@@ -1,6 +1,6 @@
 import { AppModel } from '../app/AppModel';
 import { NAME_MAX, Profile, reducedMotion, STEP_GOAL_MAX, STEP_GOAL_MIN, WEEKLY_GOAL_MAX, WEEKLY_GOAL_MIN, sanitizeName } from '../core/Profile';
-import { formatSteps } from '../core/Plan';
+import { formatSteps, plural } from '../core/Plan';
 import { findSpecies } from '../core/Species';
 import { Button56, IconButton, NavRow, SectionLabel, Tile } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
@@ -83,6 +83,12 @@ struct Settings {
     if (this.confirm === 'sample') {
       m.loadDemoHistory();
       setTimeout(() => this.toast('Loaded 14 days of simulated history'), 400); // after the sheet closes
+    } else if (this.confirm === 'demo-off' || this.confirm === 'demo-keep') {
+      if (this.confirm === 'demo-off') {
+        m.resetHistory();
+      }
+      m.setDemo(false);
+      setTimeout(() => this.toast('Demo mode off: real sensors'), 400);
     } else if (this.confirm === 'erase') {
       m.resetAll();
       this.showConfirm = false;
@@ -92,6 +98,28 @@ struct Settings {
     }
     this.showConfirm = false;
     this.load();
+  }
+
+  private confirmTitle(): string {
+    if (this.confirm === 'erase') {
+      return 'Erase all data?';
+    }
+    if (this.confirm === 'demo-off') {
+      return 'Turn off Demo mode?';
+    }
+    return 'Load sample data?';
+  }
+
+  private confirmBody(): string {
+    if (this.confirm === 'erase') {
+      return 'All workouts, body weight, badges, your creature and your settings are deleted from this phone. ' +
+        'This cannot be undone.';
+    }
+    if (this.confirm === 'demo-off') {
+      return 'Your history contains simulated sample training. Clear it to start your real history, or keep it.';
+    }
+    return (this.workouts > 0 ? 'Your ' + plural(this.workouts, 'workout') + ' will be replaced by ' :
+      'This adds ') + '14 days of clearly labelled simulated training and turns on Demo mode.';
   }
 
   private isOn(key: string): boolean {
@@ -109,6 +137,11 @@ struct Settings {
 
   private toggle(key: string, v: boolean): void {
     if (key === 'demo') {
+      if (!v && AppModel.get().hasSampleHistory()) {
+        // Sample training would otherwise stay mixed into real progress.
+        this.ask('demo-off');
+        return;
+      }
       AppModel.get().setDemo(v);
       this.load();
       this.toast(v ? 'Demo mode on: sensors are simulated' : 'Demo mode off: real sensors');
@@ -169,7 +202,7 @@ struct Settings {
     Column() {
       Row({ space: 10 }) {
         Text(title).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1).maxLines(1)
-        IconButton({ icon: $r('app.media.ic_minus'), label: 'Decrease ' + title, diameter: 36, onTap: () => {
+        IconButton({ icon: $r('app.media.ic_minus'), label: 'Decrease ' + title, diameter: 40, onTap: () => {
           if (key === 'weekly') {
             this.setWeekly(-1);
           } else {
@@ -182,7 +215,7 @@ struct Settings {
           .fontColor(TEXT)
           .width(44)
           .textAlign(TextAlign.Center)
-        IconButton({ icon: $r('app.media.ic_plus'), label: 'Increase ' + title, diameter: 36, onTap: () => {
+        IconButton({ icon: $r('app.media.ic_plus'), label: 'Increase ' + title, diameter: 40, onTap: () => {
           if (key === 'weekly') {
             this.setWeekly(1);
           } else {
@@ -234,27 +267,32 @@ struct Settings {
   @Builder
   ConfirmSheet() {
     Column({ space: 10 }) {
-      Text(this.confirm === 'erase' ? 'Erase all data?' : 'Replace history with sample data?')
+      Text(this.confirmTitle())
         .fontSize(22)
         .fontFamily(F_BOLD)
         .fontColor(TEXT)
         .width('100%')
-      Text(this.confirm === 'erase' ?
-        'All workouts, your creature and your settings are deleted from this phone. This cannot be undone.' :
-        'Your ' + this.workouts + (this.workouts === 1 ? ' workout is' : ' workouts are') +
-          ' replaced by 14 days of clearly labelled simulated training, and Demo mode is turned on.')
+      Text(this.confirmBody())
         .fontSize(14)
         .fontFamily(F_REG)
         .fontColor(TEXT_DIM)
         .width('100%')
         .margin({ bottom: 8 })
       Button56({
-        label: this.confirm === 'erase' ? 'Erase everything' : 'Load sample data',
+        label: this.confirm === 'erase' ? 'Erase everything' : (this.confirm === 'demo-off' ? 'Clear sample data' :
+          'Load sample data'),
         kind: this.confirm === 'erase' ? 'danger' : 'primary',
         onTap: () => this.runConfirm()
       })
+      if (this.confirm === 'demo-off') {
+        Button56({ label: 'Keep it', kind: 'secondary', onTap: () => {
+          this.confirm = 'demo-keep';
+          this.runConfirm();
+        } })
+      }
       Button56({ label: 'Cancel', kind: 'ghost', onTap: () => {
         this.showConfirm = false;
+        this.load();
       } })
     }
     .padding({ left: PAD, right: PAD, top: 8, bottom: 16 })
@@ -269,7 +307,7 @@ struct Settings {
       .width('100%')
       .padding({ left: PAD, right: PAD, top: 8, bottom: 8 })
       .bindSheet($$this.showConfirm, this.ConfirmSheet(), {
-        height: 320,
+        height: SheetSize.FIT_CONTENT,
         showClose: false,
         dragBar: true,
         backgroundColor: SURFACE
@@ -291,7 +329,7 @@ struct Settings {
               })
               NavRow({
                 icon: $r('app.media.ic_trophy'),
-                title: 'Creatures and badges',
+                title: 'Collection',
                 value: findSpecies(this.profile.species).name,
                 divider: false,
                 onTap: () => navPush(this.getUIContext(), 'pages/Collection')
@@ -354,7 +392,8 @@ struct Settings {
                 chevron: false,
                 onTap: () => this.toast('No account, no cloud, no network permission.')
               })
-              NavRow({ icon: $r('app.media.ic_help'), title: 'Version', value: APP_VERSION, chevron: false, divider: false })
+              NavRow({ icon: $r('app.media.ic_help'), title: 'Version', value: APP_VERSION, chevron: false, divider: false,
+                tappable: false })
             }
             .padding({ left: 14, right: 14 })
           }
@@ -392,7 +431,7 @@ struct Settings {
     .height('100%')
     .backgroundColor(BG)
     .bindSheet($$this.showName, this.NameSheet(), {
-      height: 260,
+      height: SheetSize.FIT_CONTENT,
       showClose: false,
       dragBar: true,
       backgroundColor: SURFACE

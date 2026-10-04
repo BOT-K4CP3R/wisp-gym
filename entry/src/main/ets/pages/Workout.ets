@@ -6,12 +6,12 @@ import { Button56, IconButton, Tag } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
 import { RouteParams, navReplace } from '../ui/Nav';
 import {
-  ACCENT, ACCENT_TINT, BG, DUR_FAST, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM,
-  TEXT_MUTE, TRACK
+  ACCENT, ACCENT_TINT, BG, DUR_FAST, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_BORDER
 } from '../ui/Theme';
 import { AccelSample, EXERCISES, Exercise, SetRecord, findExercise } from '../core/Types';
 import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
+import { plural } from '../core/Plan';
 import { TraceOptions } from '../core/Sim';
 import { MotionSource, RealAccelSource, SimulatedSource } from '../platform/MotionSource';
 import { CreatureCanvas } from '../components/CreatureCanvas';
@@ -82,6 +82,7 @@ struct Workout {
   private countdownEnd: number = 0;
   private cueFatigue: number = new AnalyzerConfig().stopFatigue;
   private leaving: boolean = false;
+  private restAlerts: boolean = true;
   private buddy: LookHolder = new LookHolder();
   private setStartedAt: number = 0;
   private gotSample: boolean = false;
@@ -90,6 +91,7 @@ struct Workout {
     registerFonts(this.getUIContext());
     const model = AppModel.get();
     this.demo = model.isDemo();
+    this.restAlerts = model.profile().restAlerts;
     this.buddy.set(model.lookFor(model.evaluateNow()), true);
     this.setFace('curious');
     const params = this.getUIContext().getRouter().getParams() as RouteParams;
@@ -476,7 +478,10 @@ struct Workout {
       return this.reps < 3 ? 'Move steadily. Your first reps set the baseline.' : this.explanation;
     }
     if (this.phase === 'rest') {
-      return this.restLeft > 0 ? 'Breathe. The timer buzzes when rest is over.' : 'Ready for the next set.';
+      if (this.restLeft <= 0) {
+        return 'Ready for the next set.';
+      }
+      return this.restAlerts ? 'Breathe. You will get a buzz when rest is over.' : 'Breathe. Start the next set when ready.';
     }
     return 'Phone: ' + ex.placement.toLowerCase() + '. Counting starts after a 3 s countdown.';
   }
@@ -487,7 +492,7 @@ struct Workout {
     if (sets === 0) {
       return 'Nothing has been counted yet.';
     }
-    return 'So far: ' + sets + (sets === 1 ? ' set' : ' sets') + ' and ' + (this.totalReps + live) + ' reps.';
+    return 'So far: ' + plural(sets, 'set') + ' and ' + plural(this.totalReps + live, 'rep') + '.';
   }
 
   private primaryLabel(): string {
@@ -502,8 +507,13 @@ struct Workout {
 
   // The motion sensor is silent: offer the simulated stream instead of waiting forever.
   private switchToDemo(): void {
-    AppModel.get().setDemo(true);
+    // Only this workout uses the simulated stream; the app's Demo mode setting is unchanged.
     this.demo = true;
+    try {
+      this.getUIContext().getPromptAction().showToast({ message: 'Simulated motion for this workout', duration: 2000 });
+    } catch (e) {
+      // cosmetic
+    }
     this.session.markSimulated();
     this.session.endSet(Date.now());
     this.stopSource();
@@ -513,7 +523,7 @@ struct Workout {
 
   private coachText(): string {
     if (!this.sensorOk) {
-      return 'Motion sensor unavailable on this device. Turn on Demo mode in Settings.';
+      return 'Motion sensor unavailable on this device. Tap here to use simulated motion.';
     }
     if (this.noData && this.phase === 'set') {
       return this.gotSample ? 'No reps detected yet. Check the phone placement, or tap here to try Demo mode.' :
@@ -694,9 +704,9 @@ struct Workout {
           Text(sc.label)
             .fontSize(12)
             .fontFamily(F_BOLD)
-            .height(32)
-            .padding({ left: 12, right: 12 })
-            .borderRadius(16)
+            .height(40)
+            .padding({ left: 14, right: 14 })
+            .borderRadius(20)
             .fontColor(this.scenario === sc.id ? ON_ACCENT : TEXT_DIM)
             .backgroundColor(this.scenario === sc.id ? ACCENT : SURFACE)
             .border({ width: this.scenario === sc.id ? 0 : 1, color: HAIRLINE })
@@ -750,7 +760,7 @@ struct Workout {
       .width('100%')
       .padding({ left: PAD, right: PAD, top: 8 })
       .bindSheet($$this.showConfirm, this.ConfirmSheet(), {
-        height: 330,
+        height: SheetSize.FIT_CONTENT,
         showClose: false,
         dragBar: true,
         backgroundColor: SURFACE
@@ -775,7 +785,7 @@ struct Workout {
         Row({ space: 10 }) {
           // The creature coaches along: its face follows the set (see setFace)
           Column() {
-            CreatureCanvas({ holder: this.buddy, label: '', canvasHeight: 52, portrait: true })
+            CreatureCanvas({ holder: this.buddy, label: '', canvasHeight: 52, portrait: true, a11y: 'Your coach' })
           }
           .width(52)
           .height(52)
@@ -793,11 +803,13 @@ struct Workout {
         .padding(14)
         .borderRadius(18)
         .backgroundColor((this.cue || this.noData) && this.phase === 'set' ? ACCENT_TINT : SURFACE)
-        .border({ width: 1, color: (this.cue || this.noData) && this.phase === 'set' ? '#40FF8A5B' : HAIRLINE })
+        .border({ width: 1, color: (this.cue || this.noData) && this.phase === 'set' ? ACCENT_BORDER : HAIRLINE })
         .animation(anim({ duration: DUR_FAST }))
         .constraintSize({ minHeight: 64 })
+        .accessibilityText((this.noData && this.phase === 'set') || !this.sensorOk ?
+          'Switch to simulated motion' : this.coachText())
         .onClick(() => {
-          if (this.noData && this.phase === 'set') {
+          if ((this.noData || !this.sensorOk) && this.phase === 'set') {
             this.switchToDemo();
           }
         })

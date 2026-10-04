@@ -11,6 +11,19 @@ const GROUP_EXERCISE: string[] = ['squat', 'press', 'deadlift', 'crunch'];
 const DAY_SHORT: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_SHORT: string[] = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// "1 rep", "2 reps"
+export function plural(n: number, word: string): string {
+  return n + ' ' + (n === 1 ? word : word + 's');
+}
+
+// "a", "a and b", "a, b and c"
+export function joinAnd(items: string[]): string {
+  if (items.length <= 1) {
+    return items.length === 1 ? items[0] : '';
+  }
+  return items.slice(0, items.length - 1).join(', ') + ' and ' + items[items.length - 1];
+}
+
 export function groupLabel(group: string): string {
   const i = GROUPS.indexOf(group);
   return i < 0 ? group : GROUP_LABELS[i];

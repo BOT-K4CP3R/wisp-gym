@@ -18,6 +18,7 @@ export struct CreatureCanvas {
   @Prop tappable: boolean = false;
   @Prop still: boolean = false;       // no idle animation (grids of many creatures)
   @Prop portrait: boolean = false;    // close-up of the head, for small sizes
+  @Prop a11y: string = '';            // spoken description (default: "Your creature")
   private settings: RenderingContextSettings = new RenderingContextSettings(true);
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
   private timer: number = -1;
@@ -148,7 +149,7 @@ export struct CreatureCanvas {
         .onReady(() => {
           this.draw();
         })
-        .accessibilityText('Your creature')
+        .accessibilityText(this.a11y.length > 0 ? this.a11y : 'Your creature')
         .onClick(() => {
           if (this.tappable) {
             this.holder.poke();

@@ -2,7 +2,7 @@ import { AppModel } from '../app/AppModel';
 import { Achievement } from '../core/Achievements';
 import { CreatureLook } from '../core/CreatureLook';
 import { CreatureState } from '../core/LifeEngine';
-import { SPECIES, Species } from '../core/Species';
+import { SPECIES, Species, findSpecies } from '../core/Species';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { IconButton, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
@@ -10,7 +10,7 @@ import { registerFonts } from '../ui/Fonts';
 import { press } from '../ui/Motion';
 import { dayLabel } from '../core/Plan';
 import {
-  ACCENT, ACCENT_TINT, BG, F_BOLD, F_REG, GAP, HAIRLINE, PAD, STAGGER, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
+  ACCENT, ACCENT_TINT, BG, F_BOLD, F_REG, GAP, HAIRLINE, PAD, STAGGER, SURFACE, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_BORDER
 } from '../ui/Theme';
 
 class Slot {
@@ -146,13 +146,8 @@ struct Collection {
     const model = AppModel.get();
     const p = model.profile();
     const oldName = p.name;
-    // Keep a custom name; follow the species when the creature still has its default name.
-    let followName = false;
-    for (let i = 0; i < SPECIES.length; i++) {
-      if (SPECIES[i].name === oldName) {
-        followName = true;
-      }
-    }
+    // Keep a custom name; follow the species only while the creature has its species' name.
+    const followName = oldName === findSpecies(p.species).name;
     p.species = slot.species.id;
     if (followName) {
       p.name = slot.species.name;
@@ -178,7 +173,8 @@ struct Collection {
     Column() {
       Stack({ alignContent: Alignment.TopEnd }) {
         Column() {
-          CreatureCanvas({ holder: slot.holder, label: '', canvasHeight: 112, tappable: false, still: true })
+          CreatureCanvas({ holder: slot.holder, label: '', canvasHeight: 112, tappable: false, still: true,
+            a11y: slot.species.name + (slot.unlocked ? '' : ', not hatched yet') })
         }
         .width('100%')
         .opacity(slot.unlocked ? 1 : 0.35)
@@ -211,7 +207,7 @@ struct Collection {
     .padding(12)
     .borderRadius(24)
     .backgroundColor(slot.species.id === this.current ? ACCENT_TINT : SURFACE)
-    .border({ width: 1, color: slot.species.id === this.current ? '#66FF8A5B' : HAIRLINE })
+    .border({ width: 1, color: slot.species.id === this.current ? ACCENT_BORDER : HAIRLINE })
     .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.96 }))
     .accessibilityText(slot.species.name + (slot.unlocked ? '' : ', locked. ' + slot.hint))
     .onClick(() => this.choose(slot))

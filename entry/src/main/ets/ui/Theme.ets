@@ -18,6 +18,8 @@ export const ACCENT = '#FF8A5B';
 export const ACCENT_MID = '#B8623F';
 export const ACCENT_LOW = '#6B3A28';
 export const ACCENT_TINT = '#1FFF8A5B';    // 12% accent, for highlighted surfaces
+export const ACCENT_SOFT = '#26FF8A5B';    // 15% accent, icon discs
+export const ACCENT_BORDER = '#59FF8A5B';  // 35% accent, borders of selected / highlighted tiles
 export const ON_ACCENT = '#1A0F0A';
 export const DANGER = '#FF6B6B';
 

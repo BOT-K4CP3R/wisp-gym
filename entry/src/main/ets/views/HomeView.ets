@@ -9,7 +9,7 @@ import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { ActivityDots, Button56, IconButton, MetricBar, Reveal, RingNumber, Tag, Tile, TitleBlock } from '../ui/Kit';
 import {
-  ACCENT, ACCENT_TINT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
+  ACCENT, ACCENT_TINT, BG, F_BOLD, F_REG, GAP, PAD, STAGGER, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_LOW, ACCENT_MID
 } from '../ui/Theme';
 import { motionOn } from '../ui/Motion';
 
@@ -449,12 +449,12 @@ export struct HomeView {
           subtitle: this.activeDays() === 0 ? 'Your sessions will light up here' :
             this.activeDays() + (this.activeDays() === 1 ? ' active day' : ' active days')
         })
-        Blank()
+          .layoutWeight(1)
         Row({ space: 4 }) {
           Text('Less').fontSize(10).fontFamily(F_REG).fontColor(TEXT_MUTE)
           Circle().width(8).height(8).fill(TRACK)
-          Circle().width(8).height(8).fill('#6B3A28')
-          Circle().width(8).height(8).fill('#B8623F')
+          Circle().width(8).height(8).fill(ACCENT_LOW)
+          Circle().width(8).height(8).fill(ACCENT_MID)
           Circle().width(8).height(8).fill(ACCENT)
           Text('More').fontSize(10).fontFamily(F_REG).fontColor(TEXT_MUTE)
         }

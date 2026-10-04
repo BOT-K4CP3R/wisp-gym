@@ -27,6 +27,7 @@ const KEY_FORMS = 'form.ids';
 const KEY_STEPS = 'steps.today';
 const KEY_STEPS_BEST = 'steps.best';
 const KEY_BADGES = 'badges.v1';
+const KEY_STEPS_BEST_AT = 'steps.bestAt';
 const DEMO_SEED = 20261003;
 const FORM_NOT_EXIST = 16501001;
 
@@ -137,6 +138,7 @@ export class AppModel {
     p.restAlerts = c.restAlerts;
     p.motion = c.motion;
     p.species = c.species;
+    p.motionAsked = c.motionAsked;
     return p;
   }
 
@@ -175,6 +177,7 @@ export class AppModel {
 
   setDemo(on: boolean): void {
     this.kv.put(KEY_DEMO, on ? '1' : '0');
+    this.badgeCache = null;
     this.pushWidget();
   }
 
@@ -224,7 +227,8 @@ export class AppModel {
     if (this.badgeCache !== null && this.badgeGoal === goal) {
       return this.badgeCache;
     }
-    const list = evaluateAchievements(this.workouts(), Date.now(), goal, this.stepsBest());
+    const list = evaluateAchievements(this.workouts(), Date.now(), goal, this.stepsBest(),
+      this.stepsBestAt());
     const kept = this.keptBadges();
     let changed = false;
     for (let i = 0; i < list.length; i++) {
@@ -238,7 +242,8 @@ export class AppModel {
         changed = true;
       }
     }
-    if (changed) {
+    // Sample (demo) history may show badges but never stores them for good.
+    if (changed && !this.isDemo()) {
       this.kv.put(KEY_BADGES, JSON.stringify(kept));
     }
     this.badgeCache = list;
@@ -271,6 +276,22 @@ export class AppModel {
       n += repsOf(ws[i]);
     }
     return n;
+  }
+
+  stepsBestAt(): number {
+    const n = parseInt(this.kv.get(KEY_STEPS_BEST_AT), 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // Sample history from the demo is present (used when turning Demo mode off).
+  hasSampleHistory(): boolean {
+    const ws = this.workouts();
+    for (let i = 0; i < ws.length; i++) {
+      if (ws[i].simulated) {
+        return true;
+      }
+    }
+    return false;
   }
 
   stepsBest(): number {
@@ -307,6 +328,7 @@ export class AppModel {
     this.kv.put(KEY_DEMO, '0');
     this.kv.put(KEY_STEPS, '');
     this.kv.put(KEY_STEPS_BEST, '');
+    this.kv.put(KEY_STEPS_BEST_AT, '');
     this.kv.put(KEY_BADGES, '');
     this.profiles.save(new Profile());
     this.profileCache = null;
@@ -367,6 +389,8 @@ export class AppModel {
     this.kv.put(KEY_STEPS, dayKey(Date.now()) + '|' + v);
     if (v > this.stepsBest() && !this.isDemo()) {
       this.kv.put(KEY_STEPS_BEST, '' + v);
+      this.kv.put(KEY_STEPS_BEST_AT, '' + Date.now());
+      this.badgeCache = null;
     }
     return v;
   }
@@ -399,11 +423,11 @@ export class AppModel {
 
   async state(): Promise<CreatureState> {
     const steps = await this.steps();
-    return new LifeEngine(this.config()).evaluate(Date.now(), this.workouts(), Math.max(0, steps));
+    return new LifeEngine(this.config()).evaluate(Date.now(), this.workouts(), steps);
   }
 
   evaluateNow(): CreatureState {
-    return new LifeEngine(this.config()).evaluate(Date.now(), this.workouts(), Math.max(0, this.stepsToday()));
+    return new LifeEngine(this.config()).evaluate(Date.now(), this.workouts(), this.stepsToday());
   }
 
   nextAction(st: CreatureState): NextAction {

@@ -39,7 +39,9 @@ ArkTS and runs on Node for tests (`scripts/test.sh`).
 | `Sim` | Deterministic synthetic accelerometer traces and a 14-day history for the demo and the tests. |
 | `Plan` | Next-step card, weekly totals (Monday first, compared with last week up to the same time), workout summary, labels. |
 | `Mood` | Display names for moods, shared by the app and the widgets. |
-| `Profile` | Name, goals, haptics, rest alerts and motion mode, validated on load and save. |
+| `Profile` | Name, species, goals, haptics, rest alerts and motion mode, validated on load and save. |
+| `Species` | The six creatures (three starters, three unlocked by badges) and the list of expressions. |
+| `Achievements` | 14 badges computed from history; species unlocks; newly earned badges for the summary. The app also stores earned ids so a badge is never taken away. |
 
 ### `platform/` — thin OS adapters
 `MotionSource` (accelerometer via SensorServiceKit, or a simulated replay), `StepService` (hardware pedometer,
@@ -58,7 +60,8 @@ Each adapter degrades gracefully: no sensor → clear message; no vibrator → s
 - `Summary`: creature reaction, duration / sets / reps, what grew (before → after), exercises.
 - `ProgressView`: weekly totals, 7-day reps chart, simulated 14-day time-lapse, history with per-set details.
 - `InsightsView`: every number behind the creature's state (explainability) and how the app works.
-- `Settings`: name, goals, haptics, rest alerts, reduce motion, demo, sample data, replay intro, erase all.
+- `Collection`: creatures to hatch or switch and every badge with its progress.
+- `Settings`: name, creature, goals, haptics, rest alerts, reduce motion, demo, sample data, replay intro, erase all.
 - `ui/Motion`: one place that decides whether animations, transitions and press effects run.
 - `components/CreatureDraw`: the creature's drawing code, pure and shared by the app Canvas, the widgets and
   `scripts/render-creature.mjs` (splash image and launcher icon).

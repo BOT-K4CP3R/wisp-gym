@@ -32,8 +32,12 @@ struct Index {
     registerFonts(this.getUIContext());
     this.syncHolders();
     // Ask once, with a stated reason, for the pedometer; the app works without it.
-    if (!AppModel.get().isDemo()) {
-      AppModel.get().requestMotionPermission().then(() => {
+    const model = AppModel.get();
+    if (!model.isDemo() && !model.profile().motionAsked) {
+      const p = model.profile();
+      p.motionAsked = true;
+      model.saveProfile(p);
+      model.requestMotionPermission().then(() => {
         this.version++;
       });
     }
@@ -60,6 +64,10 @@ struct Index {
     }
     this.handledTarget = raw;
     const target = raw.split('@')[0];
+    // A widget tap while a workout, settings or another page is open: stay where the user is.
+    if (this.getUIContext().getRouter().getLength() !== '1' && this.getUIContext().getRouter().getLength() !== '0') {
+      return;
+    }
     this.navigate(target);
   }
 

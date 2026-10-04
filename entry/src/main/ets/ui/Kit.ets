@@ -1,6 +1,5 @@
 import {
-  ACCENT, ACCENT_LOW, ACCENT_MID, ACCENT_TINT, DANGER, DUR_FAST, DUR_SLOW, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, R_PILL,
-  R_TILE, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK
+  ACCENT, ACCENT_LOW, ACCENT_MID, ACCENT_TINT, DANGER, DUR_FAST, DUR_SLOW, F_BOLD, F_REG, HAIRLINE, ON_ACCENT, R_PILL, R_TILE, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE, TRACK, ACCENT_BORDER
 } from './Theme';
 import { anim, fx, press, motionOn } from './Motion';
 
@@ -26,7 +25,7 @@ export struct Tile {
     .padding(this.pad)
     .borderRadius(R_TILE)
     .backgroundColor(this.highlight ? ACCENT_TINT : SURFACE)
-    .border({ width: 1, color: this.highlight ? '#40FF8A5B' : HAIRLINE })
+    .border({ width: 1, color: this.highlight ? ACCENT_BORDER : HAIRLINE })
     .clickEffect(this.tappable ? press({ level: ClickEffectLevel.LIGHT, scale: 0.97 }) : null)
     .onClick(() => {
       if (this.tappable) {
@@ -413,6 +412,7 @@ export struct NavRow {
   @Prop danger: boolean = false;
   @Prop divider: boolean = true;
   @Prop chevron: boolean = true;
+  @Prop tappable: boolean = true;
   onTap: () => void = () => {};
 
   build() {
@@ -425,6 +425,7 @@ export struct NavRow {
           .fontColor(this.danger ? DANGER : TEXT)
           .layoutWeight(1)
           .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
         if (this.value.length > 0) {
           Text(this.value).fontSize(15).fontFamily(F_REG).fontColor(TEXT_DIM).maxLines(1)
         }
@@ -438,8 +439,12 @@ export struct NavRow {
         Divider().color(HAIRLINE).strokeWidth(1).margin({ left: 36 })
       }
     }
-    .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
-    .onClick(() => this.onTap())
+    .clickEffect(this.tappable ? press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }) : null)
+    .onClick(() => {
+      if (this.tappable) {
+        this.onTap();
+      }
+    })
   }
 }
 

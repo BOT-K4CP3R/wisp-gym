@@ -127,7 +127,7 @@ export class LifeEngine {
     st.sessions72h = sessions72;
     st.load48h = load48;
     st.totalWorkouts = workouts.length;
-    st.move = clamp(stepsToday / this.cfg.stepsGoal, 0, 1);
+    st.move = clamp(Math.max(0, stepsToday) / this.cfg.stepsGoal, 0, 1);
     st.restRequested = sessions72 >= this.cfg.restSessions72h || load48 >= this.cfg.restLoad48h;
 
     st.mood = this.pickMood(st);
@@ -162,8 +162,9 @@ export class LifeEngine {
     st.reasons.push(new Reason(
       'move',
       'Daily movement',
-      groupThousands(Math.max(0, stepsToday)) + ' steps',
-      'Goal ' + groupThousands(this.cfg.stepsGoal) + ' steps a day.',
+      stepsToday < 0 ? 'Off' : groupThousands(stepsToday) + ' steps',
+      stepsToday < 0 ? 'Step sensor unavailable or permission not granted. Goal ' +
+        groupThousands(this.cfg.stepsGoal) + ' steps a day.' : 'Goal ' + groupThousands(this.cfg.stepsGoal) + ' steps a day.',
       st.move >= 0.6
     ));
     return st;

@@ -19,6 +19,7 @@ export class Profile {
   restAlerts: boolean = true;   // notification + buzz when a rest timer ends
   motion: string = 'auto';      // auto | full | reduced
   species: string = 'wisp';     // the creature being raised (see Species.ets)
+  motionAsked: boolean = false; // the step permission was offered once (Allow or Not now)
 }
 
 function validSpecies(id: string): boolean {
@@ -101,6 +102,7 @@ export class ProfileStore {
     p.restAlerts = raw.restAlerts !== false;
     p.motion = MOTION_MODES.indexOf(raw.motion) >= 0 ? raw.motion : 'auto';
     p.species = validSpecies(raw.species) ? raw.species : 'wisp';
+    p.motionAsked = raw.motionAsked === true;
     return p;
   }
 
@@ -114,6 +116,7 @@ export class ProfileStore {
     clean.restAlerts = p.restAlerts !== false;
     clean.motion = MOTION_MODES.indexOf(p.motion) >= 0 ? p.motion : 'auto';
     clean.species = validSpecies(p.species) ? p.species : 'wisp';
+    clean.motionAsked = p.motionAsked === true;
     this.kv.put(KEY_PROFILE, JSON.stringify(clean));
   }
 }
