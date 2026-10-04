@@ -5,6 +5,7 @@ import { LevelInfo, NextAction, WeekStats, formatSteps, levelFor, timeOfDayGreet
 import { GROUPS } from '../core/Types';
 import { Achievement } from '../core/Achievements';
 import { SPECIES, findSpecies } from '../core/Species';
+import { bmiInfo, formatDelta, formatKg, weightStats } from '../core/Body';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { ActivityDots, Button56, IconButton, MetricBar, Reveal, RingNumber, Tag, Tile, TitleBlock } from '../ui/Kit';
@@ -41,6 +42,10 @@ export struct HomeView {
   @State badgesDone: number = 0;
   @State level: LevelInfo = new LevelInfo();
   @State speciesName: string = 'Wisp';
+  @State bodyKg: number = 0;
+  @State bodyDelta: string = '';
+  @State bodyBmi: string = '';
+  @State bodyGoal: string = '';
   @State badgesTotal: number = 0;
   @State creaturesOpen: number = 1;
   @State nextBadge: string = '';
@@ -73,6 +78,12 @@ export struct HomeView {
     this.loadCollection();
     this.level = levelFor(model.totalReps());
     this.speciesName = findSpecies(p.species).name;
+    const ws = weightStats(model.weights(), p.goalKg, Date.now());
+    this.bodyKg = ws.latest;
+    this.bodyDelta = ws.count > 1 ? formatDelta(ws.change7) + ' in 7 days' : (ws.count === 1 ? 'First weigh-in logged' : '');
+    const b = bmiInfo(ws.latest, p.heightCm);
+    this.bodyBmi = b.value > 0 ? 'BMI ' + b.value.toFixed(1) + '  ·  ' + b.label : (p.heightCm > 0 ? '' : 'Add height for BMI');
+    this.bodyGoal = p.goalKg > 0 && ws.count > 0 ? formatKg(Math.abs(ws.toGoal)) + (ws.toGoal < 0 ? ' to lose' : ' to gain') : '';
     // Show the cached state at once, then refine with a fresh step reading.
     this.apply(model.evaluateNow(), model.stepsToday());
     model.state().then((st: CreatureState) => {
@@ -383,6 +394,33 @@ export struct HomeView {
   }
 
   @Builder
+  BodyTile() {
+    Tile({ pad: 20, tappable: true, onTap: () => this.onNavigate('body') }) {
+      Row() {
+        TitleBlock({
+          title: 'Body weight',
+          subtitle: this.bodyKg > 0 ? (this.bodyGoal.length > 0 ? this.bodyDelta + '  ·  ' + this.bodyGoal : this.bodyDelta) :
+            'Log your weight to track progress'
+        })
+          .layoutWeight(1)
+        Text(this.bodyKg > 0 ? formatKg(this.bodyKg) : '+ Log')
+          .fontSize(this.bodyKg > 0 ? 28 : 18)
+          .fontFamily(F_BOLD)
+          .fontColor(this.bodyKg > 0 ? TEXT : ACCENT)
+      }
+      .width('100%')
+      if (this.bodyBmi.length > 0) {
+        Text(this.bodyBmi)
+          .fontSize(12)
+          .fontFamily(F_BOLD)
+          .fontColor(TEXT_DIM)
+          .width('100%')
+          .margin({ top: 10 })
+      }
+    }
+  }
+
+  @Builder
   CollectionTile() {
     Tile({ pad: 20, tappable: true, onTap: () => this.onNavigate('collection') }) {
       Row() {
@@ -480,6 +518,9 @@ export struct HomeView {
           }
           Reveal({ delay: STAGGER * 3 }) {
             this.RecoveryTile()
+          }
+          Reveal({ delay: STAGGER * 3 }) {
+            this.BodyTile()
           }
           Reveal({ delay: STAGGER * 4 }) {
             this.WeekTile()

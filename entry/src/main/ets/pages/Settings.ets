@@ -253,7 +253,7 @@ struct Settings {
         .onSubmit(() => this.saveName())
       Button56({ label: 'Save', active: this.draftName.trim().length > 0, onTap: () => this.saveName() })
     }
-    .padding({ left: PAD, right: PAD, top: 8, bottom: 16 })
+    .padding({ left: PAD, right: PAD, top: 8, bottom: 36 })
   }
 
   private saveName(): void {
@@ -295,7 +295,7 @@ struct Settings {
         this.load();
       } })
     }
-    .padding({ left: PAD, right: PAD, top: 8, bottom: 16 })
+    .padding({ left: PAD, right: PAD, top: 8, bottom: 36 })
   }
 
   build() {
@@ -326,6 +326,12 @@ struct Settings {
                   this.draftName = this.profile.name;
                   this.showName = true;
                 }
+              })
+              NavRow({
+                icon: $r('app.media.ic_target'),
+                title: 'Body and BMI',
+                value: this.profile.heightCm > 0 ? this.profile.heightCm.toFixed(0) + ' cm' : '',
+                onTap: () => navPush(this.getUIContext(), 'pages/Body')
               })
               NavRow({
                 icon: $r('app.media.ic_trophy'),

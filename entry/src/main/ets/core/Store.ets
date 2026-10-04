@@ -117,6 +117,7 @@ export class HistoryStore {
       s.fatigue = clamp(num(rs.fatigue, 0), 0, 1);
       s.quality = clamp(num(rs.quality, 1), 0, 1);
       s.simulated = rs.simulated === true;
+      s.weightKg = clamp(num(rs.weightKg, 0), 0, 1000);
       s.intervalsMs = rs.intervalsMs instanceof Array ? rs.intervalsMs.filter((v) => isFinite(v)) : [];
       s.peaks = rs.peaks instanceof Array ? rs.peaks.filter((v) => isFinite(v)) : [];
       w.sets.push(s);

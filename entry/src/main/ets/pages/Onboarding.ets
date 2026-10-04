@@ -3,6 +3,7 @@ import { CreatureLook } from '../core/CreatureLook';
 import { NAME_MAX, Profile, sanitizeName } from '../core/Profile';
 import { formatSteps } from '../core/Plan';
 import { SPECIES, Species, findSpecies } from '../core/Species';
+import { bmiInfo, healthyRange } from '../core/Body';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, Chip, IconButton } from '../ui/Kit';
@@ -56,13 +57,17 @@ struct Onboarding {
   @State step: number = 0;
   @State name: string = 'Wisp';
   @State species: string = 'wisp';
+  @State heightCm: number = 175;
+  @State weightKg: number = 75;
+  @State goalKg: number = 75;
+  @State bodySkipped: boolean = false;
   @State weekly: number = 3;
   @State stepGoal: number = 8000;
   @State useDemo: boolean = false;
   @State replay: boolean = false;
   @State asking: boolean = false;
   private holder: LookHolder = new LookHolder();
-  private steps: string[] = ['welcome', 'how', 'creature', 'name', 'goals', 'permissions', 'mode', 'ready'];
+  private steps: string[] = ['welcome', 'how', 'creature', 'name', 'goals', 'body', 'permissions', 'mode', 'ready'];
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
@@ -70,10 +75,18 @@ struct Onboarding {
     this.replay = params !== undefined && params !== null && params.replay === true;
     if (this.replay) {
       // A replay keeps the user's data; choosing demo data here would overwrite it.
-      this.steps = ['welcome', 'how', 'creature', 'name', 'goals', 'permissions', 'ready'];
+      this.steps = ['welcome', 'how', 'creature', 'name', 'goals', 'body', 'permissions', 'ready'];
       const p = AppModel.get().profile();
       this.name = p.name;
       this.species = p.species;
+      if (p.heightCm > 0) {
+        this.heightCm = p.heightCm;
+      }
+      const latest = AppModel.get().latestWeight();
+      if (latest > 0) {
+        this.weightKg = latest;
+      }
+      this.goalKg = p.goalKg > 0 ? p.goalKg : this.weightKg;
       this.weekly = p.weeklyGoal;
       this.stepGoal = p.stepGoal;
     }
@@ -118,6 +131,52 @@ struct Onboarding {
     this.holder.express('joy', 900);
     this.holder.poke();
     AppModel.get().tick(10);
+  }
+
+  private goalText(): string {
+    const d = this.goalKg - this.weightKg;
+    const range = healthyRange(this.heightCm);
+    const base = 'Healthy range ' + range[0].toFixed(0) + '-' + range[1].toFixed(0) + ' kg. ';
+    if (Math.abs(d) < 0.25) {
+      return base + 'Goal: stay steady.';
+    }
+    return base + 'Goal: ' + (d < 0 ? 'lose ' : 'gain ') + Math.abs(d).toFixed(1) + ' kg.';
+  }
+
+  private measureValue(key: string): number {
+    return key === 'height' ? this.heightCm : (key === 'weight' ? this.weightKg : this.goalKg);
+  }
+
+  private bump(key: string, dir: number): void {
+    if (key === 'height') {
+      this.heightCm = Math.min(230, Math.max(120, this.heightCm + dir));
+    } else if (key === 'weight') {
+      const before = this.weightKg;
+      this.weightKg = Math.min(250, Math.max(35, Math.round((this.weightKg + dir * 0.5) * 10) / 10));
+      if (Math.abs(this.goalKg - before) < 0.01) {
+        this.goalKg = this.weightKg;  // the goal follows until the user sets it
+      }
+    } else {
+      this.goalKg = Math.min(250, Math.max(35, Math.round((this.goalKg + dir * 0.5) * 10) / 10));
+    }
+    AppModel.get().tick(6);
+  }
+
+  @Builder
+  Measure(title: string, unit: string, key: string) {
+    Row({ space: 10 }) {
+      Text(title).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
+      IconButton({ icon: $r('app.media.ic_minus'), label: 'Decrease ' + title, diameter: 40, onTap: () => this.bump(key, -1) })
+      Text(this.measureValue(key).toFixed(key === 'height' ? 0 : 1) + ' ' + unit)
+        .fontSize(17)
+        .fontFamily(F_BOLD)
+        .fontColor(TEXT)
+        .width(86)
+        .textAlign(TextAlign.Center)
+      IconButton({ icon: $r('app.media.ic_plus'), label: 'Increase ' + title, diameter: 40, onTap: () => this.bump(key, 1) })
+    }
+    .width('100%')
+    .height(48)
   }
 
   private stepId(): string {
@@ -168,11 +227,18 @@ struct Onboarding {
     const p: Profile = model.profile();
     p.name = sanitizeName(this.name);
     p.species = this.species;
+    if (!this.bodySkipped) {
+      p.heightCm = this.heightCm;
+      p.goalKg = this.goalKg;
+    }
     p.motionAsked = true; // the permissions step offered it (Allow or Not now)
     p.weeklyGoal = this.weekly;
     p.stepGoal = this.stepGoal;
     p.onboarded = true;
     model.saveProfile(p);
+    if (!this.bodySkipped && Math.abs(model.latestWeight() - this.weightKg) >= 0.05) {
+      model.logWeight(this.weightKg);
+    }
     const router = this.getUIContext().getRouter();
     if (this.replay) {
       router.back();
@@ -206,6 +272,9 @@ struct Onboarding {
       this.allowPermissions();
     } else if (id === 'ready') {
       this.finish();
+    } else if (id === 'body') {
+      this.bodySkipped = false;
+      this.go(this.step + 1);
     } else {
       this.go(this.step + 1);
     }
@@ -430,6 +499,35 @@ struct Onboarding {
       }
       .padding({ top: 24 })
       .transition(fx(STEP_FX))
+    } else if (this.stepId() === 'body') {
+      Column({ space: 14 }) {
+        this.Title('About you', 'Used for BMI and your body-weight goal. Stays on this phone.')
+        this.Measure('Height', 'cm', 'height')
+        this.Measure('Weight', 'kg', 'weight')
+        this.Measure('Goal weight', 'kg', 'goal')
+        Row({ space: 12 }) {
+          Column() {
+            Text(bmiInfo(this.weightKg, this.heightCm).value.toFixed(1))
+              .fontSize(26)
+              .fontFamily(F_BOLD)
+              .fontColor(TEXT)
+            Text('BMI').fontSize(11).fontFamily(F_BOLD).fontColor(TEXT_MUTE)
+          }
+          .width(64)
+          Column({ space: 2 }) {
+            Text(bmiInfo(this.weightKg, this.heightCm).label).fontSize(15).fontFamily(F_BOLD).fontColor(ACCENT)
+            Text(this.goalText()).fontSize(12).fontFamily(F_REG).fontColor(TEXT_DIM).width('100%')
+          }
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
+        }
+        .width('100%')
+        .padding(14)
+        .borderRadius(18)
+        .backgroundColor(SURFACE)
+        .border({ width: 1, color: HAIRLINE })
+      }
+      .transition(fx(STEP_FX))
     } else if (this.stepId() === 'permissions') {
       Column({ space: 28 }) {
         this.Title('Two small permissions', 'Both are optional. Wisp Gym works without them.')
@@ -523,6 +621,12 @@ struct Onboarding {
         })
         if (this.stepId() === 'permissions') {
           Button56({ label: 'Not now', kind: 'ghost', height56: 48, onTap: () => this.go(this.step + 1) })
+        }
+        if (this.stepId() === 'body') {
+          Button56({ label: 'Skip for now', kind: 'ghost', height56: 48, onTap: () => {
+            this.bodySkipped = true;
+            this.go(this.step + 1);
+          } })
         }
       }
       .padding({ left: PAD, right: PAD, top: 8, bottom: 16 })

@@ -36,6 +36,7 @@ export class WorkoutSession {
   private lastRepMs: number = 0;
   private record: WorkoutRecord = new WorkoutRecord();
   private lastStatus: SetStatus = new SetStatus();
+  private weightKg: number = 0;
 
   constructor(startMs: number, simulated: boolean, cfg: SessionConfig) {
     this.cfg = cfg;
@@ -64,8 +65,9 @@ export class WorkoutSession {
     return this.record.sets.length;
   }
 
-  startSet(exerciseId: string, nowMs: number): void {
+  startSet(exerciseId: string, nowMs: number, weightKg?: number): void {
     this.current = findExercise(exerciseId);
+    this.weightKg = weightKg === undefined ? 0 : Math.max(0, weightKg);
     const cfg = new RepDetectorConfig();
     cfg.minPeak = this.current.minPeak;
     this.detector = new RepDetector(cfg);
@@ -127,6 +129,7 @@ export class WorkoutSession {
       rec.startMs = this.setStartMs;
       rec.endMs = nowMs;
       rec.simulated = this.simulated;
+      rec.weightKg = this.weightKg;
       this.analyzer.fillRecord(rec);
       this.record.sets.push(rec);
       result = rec;

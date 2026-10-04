@@ -280,6 +280,8 @@ export class WorkoutSummary {
   simulated: boolean = false;
   newBadges: string[] = [];   // titles of badges earned by this workout
   newSpecies: string[] = [];  // names of creatures this workout unlocked
+  volumeKg: number = 0;       // sum of reps x load
+  prs: string[] = [];         // "Squat 62.5 kg": heavier than ever before
   levelBefore: number = 1;
   levelAfter: number = 1;
 }
@@ -293,6 +295,7 @@ export function summarize(rec: WorkoutRecord, before: CreatureState, after: Crea
   for (let i = 0; i < rec.sets.length; i++) {
     const set = rec.sets[i];
     s.reps += set.reps;
+    s.volumeKg += set.reps * Math.max(0, set.weightKg);
     s.bestSet = Math.max(s.bestSet, set.reps);
     if (set.fatigue >= cueFatigue) {
       s.cues++;
@@ -335,6 +338,9 @@ export class Records {
   longestMs: number = 0;        // longest session
   favorite: string = '';        // exercise with the most sets
   activeDays: number = 0;       // distinct days with a session
+  volumeKg: number = 0;         // all-time sum of reps x load
+  heaviestKg: number = 0;
+  heaviestExercise: string = '';
 }
 
 export function records(workouts: WorkoutRecord[], nowMs: number): Records {
@@ -357,6 +363,11 @@ export function records(workouts: WorkoutRecord[], nowMs: number): Records {
       }
       counted++;
       reps += set.reps;
+      r.volumeKg += set.reps * Math.max(0, set.weightKg);
+      if (set.weightKg > r.heaviestKg) {
+        r.heaviestKg = set.weightKg;
+        r.heaviestExercise = findExercise(set.exercise).name;
+      }
       if (set.reps > r.bestSet) {
         r.bestSet = set.reps;
         r.bestSetExercise = findExercise(set.exercise).name;
@@ -417,4 +428,77 @@ export function levelFor(xp: number): LevelInfo {
   info.into = left;
   info.need = need;
   return info;
+}
+
+// Heaviest load ever used per exercise id, from history (sets with reps only).
+export function heaviestByExercise(workouts: WorkoutRecord[], nowMs: number): string[] {
+  const out: string[] = [];
+  const ids: string[] = [];
+  const kgs: number[] = [];
+  for (let i = 0; i < workouts.length; i++) {
+    const w = workouts[i];
+    if ((w.endMs > 0 ? w.endMs : w.startMs) > nowMs) {
+      continue;
+    }
+    for (let k = 0; k < w.sets.length; k++) {
+      const set = w.sets[k];
+      if (set.reps <= 0 || set.weightKg <= 0) {
+        continue;
+      }
+      const at = ids.indexOf(set.exercise);
+      if (at < 0) {
+        ids.push(set.exercise);
+        kgs.push(set.weightKg);
+      } else if (set.weightKg > kgs[at]) {
+        kgs[at] = set.weightKg;
+      }
+    }
+  }
+  for (let i = 0; i < ids.length; i++) {
+    out.push(ids[i] + ':' + kgs[i]);
+  }
+  return out;
+}
+
+// Personal records set by `w` compared with the history before it: "Squat 62.5 kg".
+export function newRecords(before: WorkoutRecord[], w: WorkoutRecord, nowMs: number): string[] {
+  const prev = heaviestByExercise(before, nowMs);
+  const best: string[] = [];
+  const bestKg: number[] = [];
+  for (let k = 0; k < w.sets.length; k++) {
+    const set = w.sets[k];
+    if (set.reps <= 0 || set.weightKg <= 0) {
+      continue;
+    }
+    const at = best.indexOf(set.exercise);
+    if (at < 0) {
+      best.push(set.exercise);
+      bestKg.push(set.weightKg);
+    } else if (set.weightKg > bestKg[at]) {
+      bestKg[at] = set.weightKg;
+    }
+  }
+  const out: string[] = [];
+  for (let i = 0; i < best.length; i++) {
+    let prevKg = 0;
+    for (let p = 0; p < prev.length; p++) {
+      const parts = prev[p].split(':');
+      if (parts[0] === best[i]) {
+        prevKg = parseFloat(parts[1]);
+      }
+    }
+    if (bestKg[i] > prevKg) {
+      out.push(findExercise(best[i]).name + ' ' + formatLoad(bestKg[i]));
+    }
+  }
+  return out;
+}
+
+// "62.5 kg", "60 kg", or "bodyweight" for 0.
+export function formatLoad(kg: number): string {
+  if (kg <= 0) {
+    return 'bodyweight';
+  }
+  const r = Math.round(kg * 10) / 10;
+  return (r % 1 === 0 ? '' + r : r.toFixed(1)) + ' kg';
 }

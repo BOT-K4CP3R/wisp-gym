@@ -89,6 +89,10 @@ struct Index {
       navPush(this.getUIContext(), 'pages/Settings');
       return;
     }
+    if (target === 'body') {
+      navPush(this.getUIContext(), 'pages/Body');
+      return;
+    }
     if (target === 'collection') {
       navPush(this.getUIContext(), 'pages/Collection');
       return;

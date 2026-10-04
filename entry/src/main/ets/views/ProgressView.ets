@@ -3,7 +3,7 @@ import { LifeEngine, CreatureState } from '../core/LifeEngine';
 import { lookFor } from '../core/CreatureLook';
 import { WorkoutRecord, SetRecord, findExercise } from '../core/Types';
 import { generateHistory } from '../core/Sim';
-import { Records, WeekStats, dayLabel, formatDuration, plural, records, repsOf } from '../core/Plan';
+import { Records, WeekStats, dayLabel, formatDuration, formatLoad, plural, records, repsOf } from '../core/Plan';
 import { groupThousands } from '../core/Types';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
@@ -288,6 +288,16 @@ export struct ProgressView {
       }
       .width('100%')
       .margin({ top: 14 })
+      if (this.rec.heaviestKg > 0) {
+        Row({ space: 8 }) {
+          RecordCell({ value: formatLoad(this.rec.heaviestKg), label: 'heaviest (' + this.rec.heaviestExercise + ')' })
+            .layoutWeight(1)
+          RecordCell({ value: groupThousands(Math.round(this.rec.volumeKg)) + ' kg', label: 'total volume' })
+            .layoutWeight(2)
+        }
+        .width('100%')
+        .margin({ top: 14 })
+      }
     }
   }
 
@@ -302,7 +312,7 @@ export struct ProgressView {
             InfoRow({
               label: 'Set ' + (i + 1) + '  ·  ' + findExercise(s.exercise).name,
               sub: 'Fatigue ' + Math.round(s.fatigue * 100) + '%  ·  tempo ' + Math.round(s.quality * 100) + '% steady',
-              value: plural(s.reps, 'rep'),
+              value: plural(s.reps, 'rep') + (s.weightKg > 0 ? ' × ' + formatLoad(s.weightKg) : ''),
               divider: i < this.detailSets.length - 1,
               strong: s.fatigue >= 0.25
             })

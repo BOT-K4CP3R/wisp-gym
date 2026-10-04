@@ -74,6 +74,7 @@ export class SetRecord {
   peaks: number[] = [];
   fatigue: number = 0;  // 0..1, tempo + drive loss at the end of the set
   quality: number = 1;  // 0..1, tempo consistency
+  weightKg: number = 0; // external load, 0 = bodyweight
   simulated: boolean = false;
 }
 

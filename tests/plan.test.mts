@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LifeEngine, LifeConfig } from '../.test-build/core/LifeEngine.ts';
-import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup, records, levelFor, plural, joinAnd } from '../.test-build/core/Plan.ts';
+import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup, records, levelFor, plural, joinAnd, newRecords, formatLoad } from '../.test-build/core/Plan.ts';
 import { moodInfo, MOODS } from '../.test-build/core/Mood.ts';
 import { Profile, ProfileStore, sanitizeName, reducedMotion } from '../.test-build/core/Profile.ts';
-import { MemoryStore } from '../.test-build/core/Store.ts';
+import { MemoryStore, HistoryStore } from '../.test-build/core/Store.ts';
 import { WorkoutSession, SessionConfig } from '../.test-build/core/WorkoutSession.ts';
 import { generateSet, TraceOptions } from '../.test-build/core/Sim.ts';
 import { WorkoutRecord, SetRecord } from '../.test-build/core/Types.ts';
@@ -243,4 +243,50 @@ test('movement reason says Off when the step sensor is unavailable', () => {
   const r = st.reasons.find((x: { key: string }) => x.key === 'move');
   assert.equal(r.value, 'Off');
   assert.equal(st.move, 0);
+});
+
+test('loads: volume, heaviest set, new records and formatting', () => {
+  const old = workout(NOW - 3 * DAY, 'legs', 2, 8);
+  old.sets.forEach((x: SetRecord) => { x.weightKg = 60; });
+  const now = workout(NOW - HOUR, 'legs', 2, 6);
+  now.sets[0].weightKg = 62.5;
+  now.sets[1].weightKg = 60;
+  const press = workout(NOW - HOUR, 'push', 1, 10, 'press');
+  press.sets[0].weightKg = 30;
+  now.sets.push(press.sets[0]);
+  assert.deepEqual(newRecords([old], now, NOW), ['Squat 62.5 kg', 'Overhead press 30 kg']);
+  assert.deepEqual(newRecords([old, now], now, NOW), []);
+  const r = records([old, now], NOW);
+  assert.equal(r.heaviestKg, 62.5);
+  assert.equal(r.heaviestExercise, 'Squat');
+  assert.equal(r.volumeKg, 8 * 60 * 2 + 6 * 62.5 + 6 * 60 + 10 * 30);
+  const s = summarize(now, evalAt([]), evalAt([now]), 0.25);
+  assert.equal(s.volumeKg, 6 * 62.5 + 6 * 60 + 10 * 30);
+  assert.equal(formatLoad(0), 'bodyweight');
+  assert.equal(formatLoad(60), '60 kg');
+  assert.equal(formatLoad(62.5), '62.5 kg');
+});
+
+test('store keeps the load of a set and clamps nonsense', () => {
+  const kv = new MemoryStore();
+  const store = new HistoryStore(kv);
+  const w = workout(NOW - DAY, 'legs', 1, 8);
+  w.sets[0].weightKg = 42.5;
+  store.add(w);
+  assert.equal(store.load()[0].sets[0].weightKg, 42.5);
+  kv.put('workouts.v1', JSON.stringify([{ sets: [{ group: 'legs', reps: 5, weightKg: -3 }, { group: 'legs', reps: 5, weightKg: 'x' }] }]));
+  assert.deepEqual(store.load()[0].sets.map((x: SetRecord) => x.weightKg), [0, 0]);
+});
+
+test('profile: height and goal weight are optional and clamped', () => {
+  const kv = new MemoryStore();
+  const store = new ProfileStore(kv);
+  assert.equal(store.load().heightCm, 0);
+  assert.equal(store.load().goalKg, 0);
+  const p = new Profile(); p.heightCm = 181.26; p.goalKg = 5; store.save(p);
+  assert.equal(store.load().heightCm, 181.3);
+  assert.equal(store.load().goalKg, 30);
+  kv.put('profile.v1', JSON.stringify({ heightCm: 'tall', goalKg: -2 }));
+  assert.equal(store.load().heightCm, 0);
+  assert.equal(store.load().goalKg, 0);
 });

@@ -160,6 +160,8 @@ export function generateHistory(nowMs: number, days: number, seed: number): Work
         rec.quality = 0.75 + rng.next() * 0.2;
         rec.fatigue = 0.1 + rng.next() * 0.25;
         rec.simulated = true;
+        // Realistic loads that creep up over the two weeks (crunches are bodyweight).
+        rec.weightKg = baseLoad(ex.id) > 0 ? baseLoad(ex.id) + 2.5 * Math.floor((days - d) / 4) : 0;
         for (let r = 1; r < rec.reps; r++) {
           rec.intervalsMs.push(2000 + Math.round(rng.gauss() * 80) + r * 25);
           rec.peaks.push(3 - r * 0.05);
@@ -171,6 +173,41 @@ export function generateHistory(nowMs: number, days: number, seed: number): Work
     result.push(w);
   }
   return result;
+}
+
+function baseLoad(id: string): number {
+  if (id === 'squat') {
+    return 60;
+  }
+  if (id === 'deadlift') {
+    return 80;
+  }
+  if (id === 'press') {
+    return 30;
+  }
+  if (id === 'curl') {
+    return 12.5;
+  }
+  return 0;
+}
+
+// Two weeks of morning weigh-ins drifting gently down (for the demo's body chart).
+export function generateWeights(nowMs: number, days: number, startKg: number, seed: number): number[][] {
+  const rng = new Rng(seed);
+  const out: number[][] = [];
+  for (let d = days; d >= 0; d--) {
+    if (d % 3 === 2) {
+      continue; // not every day: realistic gaps
+    }
+    const day = new Date(nowMs - d * 86400000);
+    day.setHours(7, 30, 0, 0);
+    if (day.getTime() > nowMs) {
+      continue;
+    }
+    const kg = startKg - (days - d) * 0.09 + (rng.next() - 0.5) * 0.6;
+    out.push([day.getTime(), Math.round(kg * 10) / 10]);
+  }
+  return out;
 }
 
 export function groupIndex(group: string): number {

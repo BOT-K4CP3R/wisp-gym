@@ -1,6 +1,7 @@
 import { AppModel } from '../app/AppModel';
 import { CreatureState } from '../core/LifeEngine';
 import { ExerciseLine, GroupGain, WorkoutSummary, formatDuration, joinAnd, plural } from '../core/Plan';
+import { groupThousands } from '../core/Types';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
@@ -159,6 +160,14 @@ struct Summary {
                 this.Big('' + this.summary.reps, 'reps = XP')
               }
               .width('100%')
+              if (this.summary.volumeKg > 0) {
+                Text('Volume lifted: ' + groupThousands(Math.round(this.summary.volumeKg)) + ' kg')
+                  .fontSize(13)
+                  .fontFamily(F_BOLD)
+                  .fontColor(TEXT_DIM)
+                  .width('100%')
+                  .margin({ top: 14 })
+              }
               if (this.summary.cues > 0) {
                 Text(this.summary.cues + (this.summary.cues === 1 ? ' set' : ' sets') +
                   ' reached the "rack it" point. That is quality work, not failure.')
@@ -185,6 +194,34 @@ struct Summary {
                   .alignItems(HorizontalAlign.Start)
                   .layoutWeight(1)
                   Text('Lv ' + this.summary.levelAfter).fontSize(26).fontFamily(F_BOLD).fontColor(ACCENT)
+                }
+                .width('100%')
+              }
+            }
+          }
+
+          if (this.summary.prs.length > 0) {
+            Reveal({ delay: STAGGER * 2 }) {
+              Tile({ pad: 18, highlight: true }) {
+                Row({ space: 14 }) {
+                  Image($r('app.media.ic_bolt_accent'))
+                    .width(44)
+                    .height(44)
+                    .padding(11)
+                    .borderRadius(22)
+                    .backgroundColor(ACCENT_SOFT)
+                  Column({ space: 3 }) {
+                    Text(this.summary.prs.length === 1 ? 'New personal record!' : 'New personal records!')
+                      .fontSize(17)
+                      .fontFamily(F_BOLD)
+                      .fontColor(TEXT)
+                    Text('Heaviest ever: ' + joinAnd(this.summary.prs) + '.')
+                      .fontSize(13)
+                      .fontFamily(F_REG)
+                      .fontColor(TEXT_DIM)
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
                 }
                 .width('100%')
               }

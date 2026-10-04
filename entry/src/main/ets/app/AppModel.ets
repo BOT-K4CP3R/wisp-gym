@@ -6,12 +6,13 @@ import { HistoryStore, KeyValueStore, MemoryStore } from '../core/Store';
 import { LifeEngine, LifeConfig, CreatureState } from '../core/LifeEngine';
 import { CreatureLook, lookFor } from '../core/CreatureLook';
 import { WorkoutRecord } from '../core/Types';
-import { generateHistory } from '../core/Sim';
+import { generateHistory, generateWeights } from '../core/Sim';
+import { BodyStore, WeightEntry } from '../core/Body';
 import { Profile, ProfileStore, reducedMotion } from '../core/Profile';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { setMotion } from '../ui/Motion';
 import { moodInfo } from '../core/Mood';
-import { NextAction, WeekStats, WorkoutSummary, formatSteps, levelFor, nextAction, repsOf, summarize, weekStats } from '../core/Plan';
+import { NextAction, WeekStats, WorkoutSummary, formatSteps, levelFor, newRecords, nextAction, repsOf, summarize, weekStats } from '../core/Plan';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
 import { Achievement, evaluateAchievements, newlyUnlocked, unlockedSpecies } from '../core/Achievements';
 import { findSpecies } from '../core/Species';
@@ -28,6 +29,8 @@ const KEY_STEPS = 'steps.today';
 const KEY_STEPS_BEST = 'steps.best';
 const KEY_BADGES = 'badges.v1';
 const KEY_STEPS_BEST_AT = 'steps.bestAt';
+const KEY_LOADS = 'loads.v1';
+const KEY_BODY_SAMPLE = 'body.sample';
 const DEMO_SEED = 20261003;
 const FORM_NOT_EXIST = 16501001;
 
@@ -83,6 +86,7 @@ export class AppModel {
   private formsPrefs: PrefsStore | null = null;
   private store: HistoryStore = new HistoryStore(new MemoryStore());
   private profiles: ProfileStore = new ProfileStore(new MemoryStore());
+  private body: BodyStore = new BodyStore(new MemoryStore());
   private context: common.Context | null = null;
   private stepSvc: StepService | null = null;
   private notifier: Notifier | null = null;
@@ -104,6 +108,7 @@ export class AppModel {
     this.forms = this.formsPrefs;
     this.store = new HistoryStore(this.kv);
     this.profiles = new ProfileStore(this.kv);
+    this.body = new BodyStore(this.kv);
     this.stepSvc = new StepService(context, this.kv);
   }
 
@@ -139,6 +144,8 @@ export class AppModel {
     p.motion = c.motion;
     p.species = c.species;
     p.motionAsked = c.motionAsked;
+    p.heightCm = c.heightCm;
+    p.goalKg = c.goalKg;
     return p;
   }
 
@@ -207,6 +214,7 @@ export class AppModel {
     this.changed();
     const after = this.evaluateNow();
     this.summary = summarize(w, before, after, new AnalyzerConfig().stopFatigue);
+    this.summary.prs = newRecords(this.workouts().filter((x: WorkoutRecord) => x !== w && x.id !== w.id), w, Date.now());
     const badgesAfter = this.achievements();
     this.summary.levelBefore = levelFor(xpBefore).level;
     this.summary.levelAfter = levelFor(this.totalReps()).level;
@@ -278,6 +286,77 @@ export class AppModel {
     return n;
   }
 
+  // ---- Loads and body weight ------------------------------------------------------------
+
+  // Last load used for an exercise (so the next set starts there), 0 = bodyweight.
+  loadFor(exerciseId: string): number {
+    const list = this.loadList();
+    for (let i = 0; i < list.length; i++) {
+      const parts = list[i].split(':');
+      if (parts[0] === exerciseId) {
+        const n = parseFloat(parts[1]);
+        return isNaN(n) ? 0 : Math.max(0, Math.min(1000, n));
+      }
+    }
+    return 0;
+  }
+
+  setLoad(exerciseId: string, kg: number): void {
+    const list = this.loadList().filter((v: string) => v.split(':')[0] !== exerciseId);
+    list.push(exerciseId + ':' + Math.max(0, Math.round(kg * 10) / 10));
+    this.kv.put(KEY_LOADS, JSON.stringify(list));
+  }
+
+  private loadList(): string[] {
+    const raw = this.kv.get(KEY_LOADS);
+    if (raw.length === 0) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as string[];
+      return parsed instanceof Array ? parsed.filter((v: string) => typeof v === 'string') : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  private removeSampleWeights(): void {
+    const raw = this.kv.get(KEY_BODY_SAMPLE);
+    if (raw.length === 0) {
+      return;
+    }
+    try {
+      const stamps = JSON.parse(raw) as number[];
+      if (stamps instanceof Array) {
+        for (let i = 0; i < stamps.length; i++) {
+          this.body.remove(stamps[i]);
+        }
+      }
+    } catch (e) {
+      // nothing to remove
+    }
+    this.kv.put(KEY_BODY_SAMPLE, '');
+  }
+
+  weights(): WeightEntry[] {
+    return this.body.load();
+  }
+
+  logWeight(kg: number): boolean {
+    const ok = this.body.add(Date.now(), kg);
+    this.pushWidget();
+    return ok;
+  }
+
+  removeWeight(atMs: number): void {
+    this.body.remove(atMs);
+  }
+
+  latestWeight(): number {
+    const all = this.body.load();
+    return all.length > 0 ? all[all.length - 1].kg : 0;
+  }
+
   stepsBestAt(): number {
     const n = parseInt(this.kv.get(KEY_STEPS_BEST_AT), 10);
     return isNaN(n) ? 0 : n;
@@ -310,12 +389,23 @@ export class AppModel {
       this.store.add(all[i]);
     }
     this.changed();
+    // Sample weigh-ins too, starting near the user's own weight when known.
+    if (this.body.load().length === 0) {
+      const weigh = generateWeights(Date.now(), 14, 78, DEMO_SEED);
+      const stamps: number[] = [];
+      for (let i = 0; i < weigh.length; i++) {
+        this.body.add(weigh[i][0], weigh[i][1]);
+        stamps.push(weigh[i][0]);
+      }
+      this.kv.put(KEY_BODY_SAMPLE, JSON.stringify(stamps)); // so "clear sample data" can remove them
+    }
     this.setDemo(true);
     this.pushWidget();
   }
 
   resetHistory(): void {
     this.store.clear();
+    this.removeSampleWeights();
     this.changed();
     this.pushWidget();
   }
@@ -329,6 +419,8 @@ export class AppModel {
     this.kv.put(KEY_STEPS, '');
     this.kv.put(KEY_STEPS_BEST, '');
     this.kv.put(KEY_STEPS_BEST_AT, '');
+    this.kv.put(KEY_LOADS, '');
+    this.body.clear();
     this.kv.put(KEY_BADGES, '');
     this.profiles.save(new Profile());
     this.profileCache = null;

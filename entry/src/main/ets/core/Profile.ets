@@ -20,6 +20,8 @@ export class Profile {
   motion: string = 'auto';      // auto | full | reduced
   species: string = 'wisp';     // the creature being raised (see Species.ets)
   motionAsked: boolean = false; // the step permission was offered once (Allow or Not now)
+  heightCm: number = 0;         // 0 = not set; used for BMI
+  goalKg: number = 0;           // 0 = no body-weight goal
 }
 
 function validSpecies(id: string): boolean {
@@ -70,6 +72,15 @@ function intIn(v: Object | undefined | null, lo: number, hi: number, fallback: n
   return Math.min(hi, Math.max(lo, Math.round(n)));
 }
 
+// Optional measurement: 0 (unset) or a value inside [lo, hi], to 1 decimal.
+function optIn(v: Object | undefined | null, lo: number, hi: number): number {
+  const n = v as number;
+  if (typeof n !== 'number' || !isFinite(n) || n <= 0) {
+    return 0;
+  }
+  return Math.round(Math.min(hi, Math.max(lo, n)) * 10) / 10;
+}
+
 const KEY_PROFILE = 'profile.v1';
 
 export class ProfileStore {
@@ -103,6 +114,8 @@ export class ProfileStore {
     p.motion = MOTION_MODES.indexOf(raw.motion) >= 0 ? raw.motion : 'auto';
     p.species = validSpecies(raw.species) ? raw.species : 'wisp';
     p.motionAsked = raw.motionAsked === true;
+    p.heightCm = optIn(raw.heightCm, 100, 250);
+    p.goalKg = optIn(raw.goalKg, 30, 300);
     return p;
   }
 
@@ -117,6 +130,8 @@ export class ProfileStore {
     clean.motion = MOTION_MODES.indexOf(p.motion) >= 0 ? p.motion : 'auto';
     clean.species = validSpecies(p.species) ? p.species : 'wisp';
     clean.motionAsked = p.motionAsked === true;
+    clean.heightCm = optIn(p.heightCm, 100, 250);
+    clean.goalKg = optIn(p.goalKg, 30, 300);
     this.kv.put(KEY_PROFILE, JSON.stringify(clean));
   }
 }

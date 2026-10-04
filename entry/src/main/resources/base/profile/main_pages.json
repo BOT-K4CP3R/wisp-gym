@@ -5,6 +5,7 @@
     "pages/Workout",
     "pages/Summary",
     "pages/Settings",
-    "pages/Collection"
+    "pages/Collection",
+    "pages/Body"
   ]
 }

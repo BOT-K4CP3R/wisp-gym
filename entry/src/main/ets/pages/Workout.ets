@@ -11,7 +11,7 @@ import {
 import { AccelSample, EXERCISES, Exercise, SetRecord, findExercise } from '../core/Types';
 import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
-import { plural } from '../core/Plan';
+import { formatLoad, plural } from '../core/Plan';
 import { TraceOptions } from '../core/Sim';
 import { MotionSource, RealAccelSource, SimulatedSource } from '../platform/MotionSource';
 import { CreatureCanvas } from '../components/CreatureCanvas';
@@ -52,6 +52,7 @@ class DoneSet {
 @Component
 struct Workout {
   @State exerciseId: string = 'squat';
+  @State loadKg: number = 0;            // external load for the next set, 0 = bodyweight
   @State phase: string = 'idle';        // idle | countdown | set | rest (UI phase)
   @State countdown: number = 3;
   @State countScale: number = 1;
@@ -99,6 +100,7 @@ struct Workout {
       this.exerciseId = findExercise(params.exercise).id;
     }
     this.session = new WorkoutSession(Date.now(), this.demo, new SessionConfig());
+    this.loadKg = model.loadFor(this.exerciseId);
     this.keepScreenOn(true);
     this.timer = setInterval(() => this.onTick(), 200);
     const n = model.notifierOrNull();
@@ -220,7 +222,8 @@ struct Workout {
     this.gotSample = false;
     this.setStartedAt = Date.now();
     hilog.info(0x00F1, TAG, 'startSet %{public}s demo=%{public}s', this.exerciseId, '' + this.demo);
-    this.session.startSet(this.exerciseId, Date.now());
+    this.session.startSet(this.exerciseId, Date.now(), this.loadKg);
+    AppModel.get().setLoad(this.exerciseId, this.loadKg);
     this.setFace('focused');
     this.phase = 'set';
     this.stopSource();
@@ -348,7 +351,8 @@ struct Workout {
     const rows: DoneSet[] = [];
     for (let i = 0; i < all.length; i++) {
       total += all[i].reps;
-      rows.push(new DoneSet('s' + i + '-' + all[i].endMs, all[i].reps + ' × ' + findExercise(all[i].exercise).name,
+      rows.push(new DoneSet('s' + i + '-' + all[i].endMs, all[i].reps + ' × ' +
+        (all[i].weightKg > 0 ? formatLoad(all[i].weightKg) + ' ' : '') + findExercise(all[i].exercise).name,
         all[i].fatigue >= this.cueFatigue));
     }
     this.totalReps = total;
@@ -549,15 +553,45 @@ struct Workout {
 
   // ---- Builders ----------------------------------------------------------------------
 
+  private changeLoad(delta: number): void {
+    this.loadKg = Math.max(0, Math.min(500, Math.round((this.loadKg + delta) * 10) / 10));
+    AppModel.get().tick(6);
+  }
+
   @Builder
   ExerciseSheet() {
     Column() {
-      Text('Choose exercise')
+      Text('Exercise and load')
         .fontSize(22)
         .fontFamily(F_BOLD)
         .fontColor(TEXT)
         .width('100%')
         .margin({ bottom: 8 })
+      Row({ space: 8 }) {
+        Column({ space: 2 }) {
+          Text(formatLoad(this.loadKg)).fontSize(22).fontFamily(F_BOLD).fontColor(this.loadKg > 0 ? TEXT : TEXT_DIM)
+          Text('load per rep (dumbbells: one hand)').fontSize(11).fontFamily(F_REG).fontColor(TEXT_MUTE)
+        }
+        .alignItems(HorizontalAlign.Start)
+        .layoutWeight(1)
+        ForEach([-5, -1, 1, 5], (d: number) => {
+          Text((d > 0 ? '+' : '−') + Math.abs(d === 1 || d === -1 ? 2.5 : 5))
+            .fontSize(13)
+            .fontFamily(F_BOLD)
+            .fontColor(TEXT)
+            .width(46)
+            .height(40)
+            .textAlign(TextAlign.Center)
+            .borderRadius(20)
+            .backgroundColor(SURFACE_HI)
+            .accessibilityText((d > 0 ? 'Add ' : 'Remove ') + Math.abs(d === 1 || d === -1 ? 2.5 : 5) + ' kilograms')
+            .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
+            .onClick(() => this.changeLoad(d === 1 || d === -1 ? d * 2.5 : d))
+        }, (d: number) => 'ld' + d)
+      }
+      .width('100%')
+      .padding({ top: 4, bottom: 12 })
+      .border({ width: { bottom: 1 }, color: HAIRLINE })
       ForEach(EXERCISES, (ex: Exercise) => {
         Row({ space: 14 }) {
           Image(this.exerciseId === ex.id ? $r('app.media.ic_phone_accent') : $r('app.media.ic_phone'))
@@ -580,10 +614,17 @@ struct Workout {
         .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
         .onClick(() => {
           this.exerciseId = ex.id;
-          this.showPicker = false;
+          this.loadKg = AppModel.get().loadFor(ex.id);
           AppModel.get().tick(10);
         })
       }, (ex: Exercise) => ex.id)
+      Column() {
+        Button56({ label: 'Done', onTap: () => {
+          this.showPicker = false;
+        } })
+      }
+      .width('100%')
+      .margin({ top: 12 })
     }
     .padding({ left: PAD, right: PAD, top: 8, bottom: 24 })
   }
@@ -613,7 +654,7 @@ struct Workout {
         this.showConfirm = false;
       } })
     }
-    .padding({ left: PAD, right: PAD, top: 8, bottom: 16 })
+    .padding({ left: PAD, right: PAD, top: 8, bottom: 36 })
   }
 
   @Builder
@@ -728,11 +769,12 @@ struct Workout {
       Row({ space: 10 }) {
         IconButton({ icon: $r('app.media.ic_close'), label: 'Close workout', onTap: () => this.close() })
         Row({ space: 6 }) {
-          Text(findExercise(this.exerciseId).name)
+          Text(findExercise(this.exerciseId).name + (this.loadKg > 0 ? '  ·  ' + formatLoad(this.loadKg) : ''))
             .fontSize(17)
             .fontFamily(F_BOLD)
             .fontColor(TEXT)
             .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
           if (this.phase !== 'set' && this.phase !== 'countdown') {
             Image($r('app.media.ic_down')).width(16).height(16).opacity(0.7)
           }
@@ -902,7 +944,7 @@ struct Workout {
     .height('100%')
     .backgroundColor(BG)
     .bindSheet($$this.showPicker, this.ExerciseSheet(), {
-      height: 440,
+      height: SheetSize.FIT_CONTENT,
       showClose: false,
       dragBar: true,
       backgroundColor: SURFACE
