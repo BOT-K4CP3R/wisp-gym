@@ -7,11 +7,12 @@ import { registerFonts } from '../ui/Fonts';
 import { RouteParams, navPush, navReplace } from '../ui/Nav';
 import { ACCENT, BG, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE } from '../ui/Theme';
 
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 @Entry
 @Component
 struct Settings {
+  @State stage: number = 0;
   @State profile: Profile = new Profile();
   @State demo: boolean = false;
   @State workouts: number = 0;
@@ -22,6 +23,11 @@ struct Settings {
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
+    // Lower sections are built in the next frame: on slow (software-rendered) devices one
+    // big first frame can exceed the system's 6 s main-thread watchdog.
+    setTimeout(() => {
+      this.stage = 1;
+    }, 120);
     this.load();
   }
 
@@ -344,80 +350,81 @@ struct Settings {
             .padding({ left: 14, right: 14 })
           }
 
-          SectionLabel({ text: 'Goals' })
-          Tile({ pad: 6 }) {
-            Column() {
-              this.StepperRow('Weekly sessions', 'weekly', true)
-              this.StepperRow('Daily steps', 'steps', false)
+          if (this.stage >= 1) {
+            SectionLabel({ text: 'Goals' })
+            Tile({ pad: 6 }) {
+              Column() {
+                this.StepperRow('Weekly sessions', 'weekly', true)
+                this.StepperRow('Daily steps', 'steps', false)
+              }
+              .padding({ left: 14, right: 14 })
             }
-            .padding({ left: 14, right: 14 })
-          }
 
-          SectionLabel({ text: 'Workout' })
-          Tile({ pad: 6 }) {
-            Column() {
-              this.ToggleRow('Haptics', 'A tick for each rep, a buzz to rack it', 'haptics', true)
-              this.ToggleRow('Rest-over alerts', 'Buzz and notify when rest is over', 'restAlerts', true)
-              this.ToggleRow('Reduce motion', AppModel.get().softwareRenderer() ?
-                'On by default here: this device renders in software' : 'Fewer animations; the creature still moves',
-                'motion', false)
+            SectionLabel({ text: 'Workout' })
+            Tile({ pad: 6 }) {
+              Column() {
+                this.ToggleRow('Haptics', 'A tick for each rep, a buzz to rack it', 'haptics', true)
+                this.ToggleRow('Rest-over alerts', 'Buzz and notify when rest is over', 'restAlerts', true)
+                this.ToggleRow('Reduce motion', AppModel.get().softwareRenderer() ?
+                  'On by default here: this device renders in software' : 'Fewer animations; the creature still moves',
+                  'motion', false)
+              }
+              .padding({ left: 14, right: 14 })
             }
-            .padding({ left: 14, right: 14 })
-          }
 
-          SectionLabel({ text: 'Demo' })
-          Tile({ pad: 6 }) {
-            Column() {
-              this.ToggleRow('Demo mode', 'Simulated motion and steps, for emulators', 'demo', true)
-              NavRow({
-                icon: $r('app.media.ic_flask'),
-                title: 'Load sample history',
-                divider: false,
-                onTap: () => this.ask('sample')
-              })
+            SectionLabel({ text: 'Demo' })
+            Tile({ pad: 6 }) {
+              Column() {
+                this.ToggleRow('Demo mode', 'Simulated motion and steps, for emulators', 'demo', true)
+                NavRow({
+                  icon: $r('app.media.ic_flask'),
+                  title: 'Load sample history',
+                  divider: false,
+                  onTap: () => this.ask('sample')
+                })
+              }
+              .padding({ left: 14, right: 14 })
             }
-            .padding({ left: 14, right: 14 })
-          }
 
-          SectionLabel({ text: 'About' })
-          Tile({ pad: 6 }) {
-            Column() {
-              NavRow({
-                icon: $r('app.media.ic_refresh'),
-                title: 'Replay introduction',
-                onTap: () => {
-                  const params = new RouteParams();
-                  params.replay = true;
-                  navPush(this.getUIContext(), 'pages/Onboarding', params);
-                }
-              })
-              NavRow({
-                icon: $r('app.media.ic_shield'),
-                title: 'Privacy',
-                value: 'On-device only',
-                chevron: false,
-                onTap: () => this.toast('No account, no cloud, no network permission.')
-              })
-              NavRow({ icon: $r('app.media.ic_help'), title: 'Version', value: APP_VERSION, chevron: false, divider: false,
-                tappable: false })
+            SectionLabel({ text: 'About' })
+            Tile({ pad: 6 }) {
+              Column() {
+                NavRow({
+                  icon: $r('app.media.ic_refresh'),
+                  title: 'Replay introduction',
+                  onTap: () => {
+                    const params = new RouteParams();
+                    params.replay = true;
+                    navPush(this.getUIContext(), 'pages/Onboarding', params);
+                  }
+                })
+                NavRow({
+                  icon: $r('app.media.ic_shield'),
+                  title: 'Privacy',
+                  value: 'On-device only',
+                  chevron: false,
+                  onTap: () => this.toast('No account, no cloud, no network permission.')
+                })
+                NavRow({ icon: $r('app.media.ic_help'), title: 'Version', value: APP_VERSION, chevron: false, divider: false,
+                  tappable: false })
+              }
+              .padding({ left: 14, right: 14 })
             }
-            .padding({ left: 14, right: 14 })
-          }
 
-          SectionLabel({ text: 'Data' })
-          Tile({ pad: 6 }) {
-            Column() {
-              NavRow({
-                icon: $r('app.media.ic_trash_danger'),
-                title: 'Erase all data',
-                danger: true,
-                divider: false,
-                onTap: () => this.ask('erase')
-              })
+            SectionLabel({ text: 'Data' })
+            Tile({ pad: 6 }) {
+              Column() {
+                NavRow({
+                  icon: $r('app.media.ic_trash_danger'),
+                  title: 'Erase all data',
+                  danger: true,
+                  divider: false,
+                  onTap: () => this.ask('erase')
+                })
+              }
+              .padding({ left: 14, right: 14 })
             }
-            .padding({ left: 14, right: 14 })
           }
-
           Text('Wisp Gym gives no medical advice. Fatigue is a tempo proxy, not a measurement. ' +
             'Font: Nunito, SIL Open Font License.')
             .fontSize(12)

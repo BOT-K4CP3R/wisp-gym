@@ -209,7 +209,3 @@ export function generateWeights(nowMs: number, days: number, startKg: number, se
   }
   return out;
 }
-
-export function groupIndex(group: string): number {
-  return GROUPS.indexOf(group);
-}

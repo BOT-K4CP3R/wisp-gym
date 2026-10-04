@@ -73,12 +73,13 @@ Everything is computed and stored **on the phone**. The app requests no network 
 |---|---|
 | Accelerometer (SensorServiceKit) | live rep detection and tempo / drive analysis |
 | Pedometer (SensorServiceKit, `ACTIVITY_MOTION`) | daily movement for the creature |
-| Service widget (`FormExtensionAbility`, `formProvider`) | creature + status on the home screen |
+| Service widgets (`FormExtensionAbility`, `formProvider`, card Canvas) | 2x2 and 2x4 widgets: creature, mood, next step, strength, recovery, steps |
 | Vibrator | stop cue and end-of-rest haptics |
 | NotificationKit | "rest over" notification |
 | Preferences (`@ohos.data.preferences`) | local, validated persistence |
 | Window (`keepScreenOn`, system-bar styling) | the workout screen stays on |
-| ArkUI Canvas | procedural creature rendering |
+| ArkUI Canvas | procedural creature rendering (6 species, 11 expressions), weight chart |
+| Device info (`deviceInfo.abiList`) | Reduce motion by default on software-rendered (x86) emulators |
 
 ## Quick start
 
@@ -105,7 +106,13 @@ Requirements: macOS or Linux, Node.js ≥ 22, JDK 17. **DevEco Studio is not req
 ./scripts/test.sh            # 74 unit tests on plain Node, no SDK needed
 ./scripts/build.sh           # signed debug HAP -> dist/wisp-gym.hap (throw-away development certificate, never committed)
 ./scripts/emulator-up.sh     # start the Oniro emulator (macOS: brew install qemu), install and launch
+python3 scripts/emu-remote.py  # optional: click the emulator from a browser at http://localhost:8765
 ```
+
+**Emulator tips.** The Oniro launcher starts QEMU without a pointer device, so clicks from a VNC viewer do not reach
+the system; `scripts/emu-remote.py` shows the live screen in a browser and turns clicks, drags and the wheel into
+touch events over `hdc`. The emulator renders in software: give it RAM (close large browser sessions on an 8 GB Mac)
+and restart it if it becomes sluggish. The app turns on *Reduce motion* automatically on x86 emulators.
 
 With DevEco Studio instead: open the folder, *File → Project Structure → Signing Configs → Automatically generate*,
 choose a device and press Run. Settings: `compatibleSdkVersion` 20, `compileSdkVersion` 23.
@@ -127,18 +134,36 @@ from the same source files. OS access is isolated in `platform/`. See [docs/ARCH
 | Checked | Result |
 |---|---|
 | Builds and signs with hvigor against SDK 6.1; installs and launches on an OpenHarmony 6.1 emulator | yes |
-| Onboarding (demo and real-sensor paths, replay from Settings), Home, Progress, Insights, Settings, tab navigation | yes (emulator) |
-| Live-counted demo sets with the "rack it" cue, rest controls, multi-set workout, summary, discard confirmation | yes (emulator) |
+| Onboarding (creature choice, name, goals, height/weight/goal with BMI, demo and real-sensor paths, replay from Settings), Home, Progress, Insights, Settings, Collection, Body, tab navigation | yes (emulator) |
+| Live-counted demo sets with the "rack it" cue, live coach faces, loads, rest controls, multi-set workout, summary with volume, discard confirmation | yes (emulator) |
+| Body weight log, chart with goal line, goal ETA, BMI with gauge, weigh-in delete | yes (emulator) |
+| Badges, creature unlocks and switching, levels, personal records | yes (emulator) |
 | Fallback when the motion sensor is silent (offers Demo mode in place) | yes (emulator) |
 | Both widgets added from the launcher, updated after workouts and settings changes | yes (emulator) |
 | Tapping a widget opens the app | yes (emulator) |
-| System permission dialog for `ACTIVITY_MOTION` with a stated reason | yes |
+| System permission dialog for `ACTIVITY_MOTION` with a stated reason (asked once) | yes |
 | Unit tests | 74 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
 | **Real** accelerometer / pedometer / vibration data | **not verifiable** on an emulator; code paths exist and fail gracefully |
 | Rep accuracy on real bodies | **not measured**; the sweep above is on synthetic traces |
 | HarmonyOS device, DevEco emulator | **not tested** |
 
 First launch on the software-emulated Oniro emulator can take about a minute; it is much faster on hardware-accelerated emulators.
+The narrated demo video in the release shows version 1.0; the screenshots in `docs/screenshots` show the current version.
+
+## Submission checklist (Huawei Challenge, HackYeah 2026)
+
+| Requirement | Where |
+|---|---|
+| Targets OpenHarmony / HarmonyOS, minimum API 20 | `build-profile.json5` (`compatibleSdkVersion` 20, compiled against 23), runs on the OpenHarmony 6.1 emulator |
+| Public source repository, commit history | this repository |
+| Reproducible setup, build, install and launch | *Build from source* above, `scripts/` |
+| Working `.hap` | GitHub release, or `./scripts/build.sh` → `dist/wisp-gym.hap` |
+| Recorded demonstration | release asset `wisp-gym-demo.mp4`, script in `docs/DEMO_SCRIPT.md` |
+| Architecture and implementation description | `docs/ARCHITECTURE.md` |
+| AI workflow documentation | `AI_WORKFLOW.md` (the product itself contains no AI model) |
+| Platform capabilities used | *Platform capabilities used* above |
+| Tests | `./scripts/test.sh` (74 Node tests) + hypium suite in `entry/src/test` |
+| Third-party material, licences, security | `THIRD_PARTY.md`, `LICENSE`, `SECURITY.md` |
 
 ## Project layout
 

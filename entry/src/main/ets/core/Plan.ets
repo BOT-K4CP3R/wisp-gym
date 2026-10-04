@@ -29,11 +29,6 @@ export function groupLabel(group: string): string {
   return i < 0 ? group : GROUP_LABELS[i];
 }
 
-export function exerciseForGroup(group: string): string {
-  const i = GROUPS.indexOf(group);
-  return i < 0 ? 'squat' : GROUP_EXERCISE[i];
-}
-
 // Index of the lowest muscle-group level (ties: first group).
 export function weakestGroup(st: CreatureState): number {
   let w = 0;

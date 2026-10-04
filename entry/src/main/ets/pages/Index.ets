@@ -65,7 +65,13 @@ struct Index {
     this.handledTarget = raw;
     const target = raw.split('@')[0];
     // A widget tap while a workout, settings or another page is open: stay where the user is.
-    if (this.getUIContext().getRouter().getLength() !== '1' && this.getUIContext().getRouter().getLength() !== '0') {
+    let depth = '1';
+    try {
+      depth = this.getUIContext().getRouter().getLength();
+    } catch (e) {
+      depth = '1';
+    }
+    if (depth !== '1' && depth !== '0') {
       return;
     }
     this.navigate(target);

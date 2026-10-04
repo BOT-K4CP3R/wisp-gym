@@ -57,6 +57,7 @@ function badgeIcon(icon: string): Resource {
 @Entry
 @Component
 struct Collection {
+  @State stage: number = 0;
   @State slots: Slot[] = [];
   @State badges: Achievement[] = [];
   @State current: string = 'wisp';
@@ -65,6 +66,11 @@ struct Collection {
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
+    // Lower sections are built in the next frame: on slow (software-rendered) devices one
+    // big first frame can exceed the system's 6 s main-thread watchdog.
+    setTimeout(() => {
+      this.stage = 1;
+    }, 120);
     this.load();
   }
 
@@ -303,15 +309,17 @@ struct Collection {
             .width('100%')
             .padding({ left: 4 })
 
-          SectionLabel({ text: 'Badges' })
-          Reveal({ delay: STAGGER }) {
-            Tile({ pad: 6 }) {
-              Column() {
-                ForEach(this.badges, (b: Achievement, i: number) => {
-                  this.BadgeRow(b, i === this.badges.length - 1)
-                }, (b: Achievement) => b.id + (b.unlocked ? '1' : '0') + b.progress)
+          if (this.stage >= 1) {
+            SectionLabel({ text: 'Badges' })
+            Reveal({ delay: STAGGER }) {
+              Tile({ pad: 6 }) {
+                Column() {
+                  ForEach(this.badges, (b: Achievement, i: number) => {
+                    this.BadgeRow(b, i === this.badges.length - 1)
+                  }, (b: Achievement) => b.id + (b.unlocked ? '1' : '0') + b.progress)
+                }
+                .padding({ left: 14, right: 14 })
               }
-              .padding({ left: 14, right: 14 })
             }
           }
           Blank().height(24)

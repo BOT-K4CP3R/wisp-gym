@@ -5,10 +5,8 @@
 export const BG = '#0A0A0C';
 export const SURFACE = '#151619';
 export const SURFACE_HI = '#1E1F23';
-export const SURFACE_TOP = '#26272C';
 export const HAIRLINE = '#1FFFFFFF';       // 12% white, tile borders
 export const TRACK = '#26FFFFFF';          // progress / empty dot
-export const SCRIM = '#99000000';
 
 export const TEXT = '#F4F4F5';
 export const TEXT_DIM = '#A1A1AA';         // 7.6:1 on BG

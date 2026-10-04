@@ -7,5 +7,6 @@
 | OpenHarmony SDK 6.1, hvigor, ohpm | build toolchain (not shipped) | Apache-2.0 / as published by OpenAtom |
 | `@ohos/hypium`, `@ohos/hamock` | test framework dev-dependencies from the project template | Apache-2.0 |
 | Project scaffold (`EmptyAbility` template) | initial project structure | Apache-2.0 |
+| [`@napi-rs/canvas`](https://github.com/Brooooooklyn/canvas) | renders the splash image and launcher icon from the app's drawing code (`scripts/render-creature.mjs`; tooling only, installed outside the repo, not shipped) | MIT |
 
-The app icon, creature artwork, UI and all source code were created for this project (MIT, see `LICENSE`).
+The app icon, the six creatures and their expressions, UI and all source code were created for this project (MIT, see `LICENSE`).

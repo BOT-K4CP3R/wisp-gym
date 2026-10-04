@@ -33,6 +33,7 @@ const RANGE_LABELS: string[] = ['30 days', '90 days', 'All'];
 @Entry
 @Component
 struct Body {
+  @State stage: number = 0;
   @State stats: WeightStats = new WeightStats();
   @State bmi: BmiInfo = new BmiInfo();
   @State rows: Row4[] = [];
@@ -50,6 +51,11 @@ struct Body {
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
+    // Lower sections are built in the next frame: on slow (software-rendered) devices one
+    // big first frame can exceed the system's 6 s main-thread watchdog.
+    setTimeout(() => {
+      this.stage = 1;
+    }, 120);
     this.load();
   }
 
@@ -425,36 +431,38 @@ struct Body {
             }
           }
 
-          if (this.rows.length > 0) {
-            SectionLabel({ text: 'Weigh-ins' })
-            Tile({ pad: 6 }) {
-              ForEach(this.rows, (r: Row4, idx: number) => {
-                Column() {
-                  Row({ space: 12 }) {
-                    Text(r.day).fontSize(14).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
-                    Text(r.delta).fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE)
-                    Text(r.kg).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).width(76).textAlign(TextAlign.End)
+          if (this.stage >= 1) {
+            if (this.rows.length > 0) {
+              SectionLabel({ text: 'Weigh-ins' })
+              Tile({ pad: 6 }) {
+                ForEach(this.rows, (r: Row4, idx: number) => {
+                  Column() {
+                    Row({ space: 12 }) {
+                      Text(r.day).fontSize(14).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
+                      Text(r.delta).fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE)
+                      Text(r.kg).fontSize(15).fontFamily(F_BOLD).fontColor(TEXT).width(76).textAlign(TextAlign.End)
+                    }
+                    .width('100%')
+                    .padding({ left: 14, right: 14, top: 12, bottom: 12 })
+                    if (idx < this.rows.length - 1) {
+                      Divider().color(HAIRLINE).strokeWidth(1).margin({ left: 14, right: 14 })
+                    }
                   }
-                  .width('100%')
-                  .padding({ left: 14, right: 14, top: 12, bottom: 12 })
-                  if (idx < this.rows.length - 1) {
-                    Divider().color(HAIRLINE).strokeWidth(1).margin({ left: 14, right: 14 })
-                  }
-                }
-                .accessibilityText(r.day + ', ' + r.kg + '. Tap to delete.')
-                .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
-                .onClick(() => {
-                  this.deleteAt = r.atMs;
-                  this.showDelete = true;
-                })
-              }, (r: Row4) => r.key + r.kg)
+                  .accessibilityText(r.day + ', ' + r.kg + '. Tap to delete.')
+                  .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.98 }))
+                  .onClick(() => {
+                    this.deleteAt = r.atMs;
+                    this.showDelete = true;
+                  })
+                }, (r: Row4) => r.key + r.kg)
+              }
+              Text('Tap a weigh-in to delete it. Weights stay on this phone.')
+                .fontSize(12)
+                .fontFamily(F_REG)
+                .fontColor(TEXT_MUTE)
+                .width('100%')
+                .padding({ left: 4 })
             }
-            Text('Tap a weigh-in to delete it. Weights stay on this phone.')
-              .fontSize(12)
-              .fontFamily(F_REG)
-              .fontColor(TEXT_MUTE)
-              .width('100%')
-              .padding({ left: 4 })
           }
           Blank().height(90)
         }
