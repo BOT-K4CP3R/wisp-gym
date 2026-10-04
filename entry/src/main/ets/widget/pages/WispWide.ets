@@ -10,7 +10,7 @@ struct WispWide {
   @LocalStorageProp('moodLabel') moodLabel: string = 'Curious';
   @LocalStorageProp('nextTitle') nextTitle: string = 'Do your first set';
   @LocalStorageProp('mood') mood: string = 'curious';
-  @LocalStorageProp('hue') hue: number = 14;
+  @LocalStorageProp('hue') hue: number = 24;
   @LocalStorageProp('glow') glow: number = 0.5;
   @LocalStorageProp('eyeOpen') eyeOpen: number = 1;
   @LocalStorageProp('smile') smile: number = 0.55;

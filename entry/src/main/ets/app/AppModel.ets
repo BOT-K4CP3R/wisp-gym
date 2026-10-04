@@ -44,7 +44,7 @@ export class WidgetData {
   moodLabel: string = 'Curious';
   moodShort: string = 'Ready when you are';
   // CreatureLook fields: the widget draws the same creature as the app
-  hue: number = 14;
+  hue: number = 24;
   glow: number = 0.5;
   eyeOpen: number = 1;
   smile: number = 0.55;

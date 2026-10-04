@@ -6,7 +6,7 @@ import { drawCreatureFit } from '../../components/CreatureDraw';
 @Component
 export struct WidgetCreature {
   @Prop @Watch('redraw') mood: string = 'curious';
-  @Prop @Watch('redraw') hue: number = 14;
+  @Prop @Watch('redraw') hue: number = 24;
   @Prop @Watch('redraw') glow: number = 0.5;
   @Prop @Watch('redraw') eyeOpen: number = 1;
   @Prop @Watch('redraw') smile: number = 0.55;

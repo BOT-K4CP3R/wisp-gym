@@ -33,7 +33,8 @@ const { CreatureLook } = await import(pathToFileURL(join(out, 'CreatureLook.ts')
 
 function look(opts) {
   const L = new CreatureLook();
-  Object.assign(L, { hue: 14, glow: 0.55, eyeOpen: 1, smile: 0.6, bob: 0, legs: 1, push: 1, pull: 1, core: 1, mood: 'curious' }, opts);
+  // The peach, joyful Wisp the app shows on Home (species hue 14 shifted by training, as in Demo mode).
+  Object.assign(L, { species: 'wisp', hue: 26, glow: 0.55, eyeOpen: 1, smile: 0.8, bob: 0, legs: 1, push: 1, pull: 1, core: 1, mood: 'thriving', expression: 'joy' }, opts);
   return L;
 }
 
@@ -53,7 +54,7 @@ if (process.argv.includes('--preview')) {
   const scratch = '/private/tmp/claude-501/-Users-kacper-hackathon-wisp-gym/76be0924-9168-4cf8-9f03-3210d137ca95/scratchpad';
   const fallback = existsSync(scratch) ? join(scratch, 'species-sheet.png') : join(process.cwd(), 'species-sheet.png');
   const dest = arg && !arg.startsWith('--') ? arg : (process.env.PREVIEW_OUT || fallback);
-  const species = [['wisp', 14], ['mochi', 330], ['ember', 2], ['pip', 42], ['nova', 265], ['moss', 120]];
+  const species = [['wisp', 24], ['mochi', 330], ['ember', 2], ['pip', 42], ['nova', 265], ['moss', 120]];
   const exprs = ['', 'happy', 'joy', 'surprised', 'focused', 'strain', 'love', 'sleepy', 'asleep', 'proud', 'curious'];
   const cell = Number(process.env.PREVIEW_CELL || 200);
   const padL = 90;
@@ -92,7 +93,7 @@ const appMedia = join(root, 'AppScope/resources/base/media');
 writeFileSync(join(media, 'startIcon.png'), render(256, look({ glow: 0.6 }), 0.92).toBuffer('image/png'));
 
 // Launcher icon foreground: the safe zone is the central ~2/3, no ground glow
-const fg = render(1024, look({ glow: 0, smile: 0.75 }), 0.78).toBuffer('image/png');
+const fg = render(1024, look({ glow: 0 }), 0.94).toBuffer('image/png');
 writeFileSync(join(media, 'foreground.png'), fg);
 writeFileSync(join(appMedia, 'foreground.png'), fg);
 

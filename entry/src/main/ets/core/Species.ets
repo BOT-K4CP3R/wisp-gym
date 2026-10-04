@@ -20,7 +20,7 @@ export class Species {
 }
 
 export const SPECIES: Species[] = [
-  new Species('wisp', 'Wisp', 'A warm little flame. Glows brighter the more you move.', 14, ''),
+  new Species('wisp', 'Wisp', 'A warm little flame. Glows brighter the more you move.', 24, ''),
   new Species('mochi', 'Mochi', 'Soft and round with long ears. Loves steady routines.', 330, ''),
   new Species('ember', 'Ember', 'Tiny horns and a fiery tail. Thrives on heavy days.', 2, 'reps-100'),
   new Species('pip', 'Pip', 'A round little bird with a crest. Never skips leg day.', 42, ''),

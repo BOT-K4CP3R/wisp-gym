@@ -25,7 +25,7 @@ for (const f of files) {
 const { drawCreatureFit } = await import(pathToFileURL(join(build, 'CreatureDraw.ts')).href);
 const { CreatureLook } = await import(pathToFileURL(join(build, 'CreatureLook.ts')).href);
 
-const SPECIES = [['wisp', 22], ['mochi', 330], ['ember', 2], ['pip', 42], ['nova', 265], ['moss', 120]];
+const SPECIES = [['wisp', 24], ['mochi', 330], ['ember', 2], ['pip', 42], ['nova', 265], ['moss', 120]];
 const EXPR = ['happy', 'joy', 'focused', 'strain', 'proud', 'sleepy', 'love', 'surprised'];
 const out = join(here, '../public/creatures');
 mkdirSync(out, { recursive: true });
