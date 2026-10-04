@@ -19,10 +19,10 @@ Fields marked **[FILL]** need your input (I cannot know or must not invent them)
 **Team status:** [FILL]  **Current team size:** [FILL]  **Needed skills:** [FILL]
 **Skills comment:** Looking for someone who can record real accelerometer traces of gym exercises (phone or watch, short session) to validate the rep detector, and a designer to review the UI. [Adjust or write "Team complete"]
 
-**Video:** [FILL: YouTube link]. File: `submission/wisp-gym-demo.mp4` (85 s, English narration, built from real emulator captures; Demo mode is labelled on screen).
+**Video:** [FILL: YouTube link]. File: `submission/wisp-gym-demo.mp4` (116 s, English narration, version 1.3, built from real emulator captures; Demo mode is labelled on screen).
 
 **Website:** (optional) repository link.
-**Code Repository:** [FILL: public URL]
+**Code Repository:** https://github.com/BOT-K4CP3R/wisp-gym
 
 **Instructions on how to open project:**
 ```

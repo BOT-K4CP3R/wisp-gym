@@ -19,7 +19,7 @@
 
 <p align="center">
   <a href="https://github.com/BOT-K4CP3R/wisp-gym/releases/latest"><b>Download the .hap</b></a> ·
-  <a href="https://github.com/BOT-K4CP3R/wisp-gym/releases/latest/download/wisp-gym-demo.mp4">Demo video (85 s)</a> ·
+  <a href="https://github.com/BOT-K4CP3R/wisp-gym/releases/latest/download/wisp-gym-demo.mp4">Demo video (2 min)</a> ·
   <a href="docs/ARCHITECTURE.md">Architecture</a> ·
   <a href="AI_WORKFLOW.md">AI workflow</a>
 </p>
@@ -148,7 +148,7 @@ from the same source files. OS access is isolated in `platform/`. See [docs/ARCH
 | HarmonyOS device, DevEco emulator | **not tested** |
 
 First launch on the software-emulated Oniro emulator can take about a minute; it is much faster on hardware-accelerated emulators.
-The narrated demo video in the release shows version 1.0; the screenshots in `docs/screenshots` show the current version.
+The narrated demo video in the release shows version 1.3 (set counting and the two-week evolution clips come from earlier emulator captures of the same flows).
 
 ## Submission checklist (Huawei Challenge, HackYeah 2026)
 

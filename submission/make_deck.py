@@ -105,12 +105,20 @@ footer(s, n)
 # 3 --- solution
 s = slide(); n += 1
 title(s, 'Your training, made visible', w=7.4)
-phone(s, A('home_thriving.jpg'), 8.6, 1.0, h=5.7)
+phone(s, A('home_pumped.jpg'), 8.6, 1.0, h=5.7)
 bullets(s, 0.7, 2.0, 7.4, [
     ('Reps counted by the phone', 'Accelerometer only, any orientation in the pocket.'),
     ('Knows when to stop', 'Tempo and drive loss trigger a "rack it" cue, with the numbers.'),
     ('Rest is part of the game', 'Over-training makes Wisp ask for a rest day. It never dies.'),
     ('Explainable and private', 'Every value is traceable. Everything stays on the phone.')], size=20, gap=1.15)
+footer(s, n)
+
+# 3b --- new in 1.3
+s = slide(); n += 1
+title(s, 'A complete training companion', 'Setup with BMI, loads and records, body weight, a collection to grow.')
+for i, (f, cap) in enumerate([('onb_body.jpg', 'First-run setup'), ('load.jpg', 'Loads per exercise'), ('body_bmi.jpg', 'Weight goal + BMI'), ('collection.jpg', '6 creatures, 14 badges')]):
+    phone(s, A(f), 0.95 + i * 3.1, 2.25, h=4.3)
+    text(s, 0.95 + i * 3.1, 6.62, 2.15, 0.3, cap, size=13, color=DIM, align=PP_ALIGN.CENTER)
 footer(s, n)
 
 # 4 --- how it works
@@ -152,7 +160,7 @@ footer(s, n)
 s = slide(); n += 1
 title(s, 'What it uses from the platform')
 rows = [('Accelerometer', 'SensorServiceKit', 'live rep detection'), ('Pedometer', 'SensorServiceKit + ACTIVITY_MOTION', 'daily movement for Wisp'),
-        ('Service widget', 'FormExtensionAbility, formProvider', 'creature + status on the home screen'), ('Vibrator', 'SensorServiceKit', 'stop cue, end of rest'),
+        ('Service widgets', 'FormExtensionAbility, formProvider', '2x2 and 2x4 creature + status'), ('Vibrator', 'SensorServiceKit', 'stop cue, end of rest'),
         ('Notifications', 'NotificationKit', 'rest finished'), ('Preferences', '@ohos.data.preferences', 'private, validated local storage'),
         ('Window', 'keepScreenOn, system bars', 'workout screen stays on')]
 for i, (a, b, c) in enumerate(rows):
@@ -166,7 +174,7 @@ footer(s, n)
 # 8 --- quality
 s = slide(); n += 1
 title(s, 'Built to be checked', 'Claims are backed by tests, builds and emulator runs.')
-items = [('22', 'unit tests on the real source files'), ('300', 'randomised synthetic sets: 99.3% exact, 100% within 1 rep'), ('0', 'network permissions, secrets or accounts'), ('API 20', 'minimum; compiled on 23, runs on the OpenHarmony 6.1 emulator')]
+items = [('74', 'unit tests on the real source files'), ('300', 'randomised synthetic sets: 99.3% exact, 100% within 1 rep'), ('0', 'network permissions, secrets or accounts'), ('API 20', 'minimum; compiled on 23, runs on the OpenHarmony 6.1 emulator')]
 for i, (big, small) in enumerate(items):
     x = 0.7 + (i % 2) * 6.1; y = 2.5 + (i // 2) * 2.1
     card(s, x, y, 5.8, 1.85)
@@ -180,7 +188,7 @@ s = slide(); n += 1
 title(s, 'What is real, and what is not', 'We say it plainly.')
 card(s, 0.7, 2.3, 5.9, 4.3); card(s, 6.8, 2.3, 5.8, 4.3)
 text(s, 1.1, 2.6, 5.2, 0.5, 'Verified', size=22, bold=True, color=ACC)
-text(s, 1.1, 3.3, 5.2, 3.2, ['Builds and signs; installs and launches on an OpenHarmony 6.1 emulator', 'All screens, a live-counted set with the stop cue, rest timer', 'Home-screen widget added and updated', 'System permission dialog with a stated reason', '22 unit tests'], size=14, color=TXT, spacing=1.25)
+text(s, 1.1, 3.3, 5.2, 3.2, ['Builds and signs; installs and launches on an OpenHarmony 6.1 emulator', 'All screens, a live-counted set with the stop cue, rest timer', 'Home-screen widget added and updated', 'System permission dialog with a stated reason', '74 unit tests'], size=14, color=TXT, spacing=1.25)
 text(s, 7.2, 2.6, 5.0, 0.5, 'Not yet', size=22, bold=True, color=ACC)
 text(s, 7.2, 3.3, 5.0, 3.2, ['Real accelerometer and pedometer data (emulators have no motion): the demo replays a labelled simulated stream', 'Rep accuracy on real bodies: tested on synthetic traces only', 'Widget tap-through; HarmonyOS device; DevEco emulator'], size=14, color=TXT, spacing=1.25)
 footer(s, n)
@@ -189,8 +197,8 @@ footer(s, n)
 s = slide(); n += 1
 title(s, 'How AI was used', 'The product contains no AI model. The development did.')
 bullets(s, 0.7, 2.4, 11.5, [
-    ('Claude Sonnet 5.5 in Claude Code', 'Ideation, architecture, code, tests, docs, emulator-driven debugging. Documented in AI_WORKFLOW.md.'),
-    ('Validated, not trusted', 'Compiler, 22 tests, on-device screenshots and logs. Bugs found on the emulator are listed with their fixes.'),
+    ('Claude Sonnet 5.5 and Opus 5.5 in Claude Code', 'Ideation, architecture, code, tests, docs, emulator-driven debugging, parallel subagents. Documented in AI_WORKFLOW.md.'),
+    ('Validated, not trusted', 'Compiler, 74 tests, on-device screenshots and logs. Bugs found on the emulator are listed with their fixes.'),
     ('Human decisions', 'Concept, scope (no AI in the product, an app not a feature), non-punitive design, visual direction.')], size=20, gap=1.45)
 footer(s, n)
 
