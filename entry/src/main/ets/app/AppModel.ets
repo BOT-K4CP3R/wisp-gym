@@ -35,11 +35,12 @@ export class WidgetData {
   mood: string = 'curious';
   moodLabel: string = 'Curious';
   moodShort: string = 'Ready when you are';
-  eyes: string = 'open';          // open | half | closed | happy
-  sparkle: boolean = false;
-  hue: string = '#FF8A5B';
-  hueLight: string = '#FFC2A3';
-  hueDark: string = '#B4502C';
+  // CreatureLook fields: the widget draws the same creature as the app
+  hue: number = 14;
+  glow: number = 0.5;
+  eyeOpen: number = 1;
+  smile: number = 0.55;
+  happyEyes: boolean = false;
   legs: number = 1;
   push: number = 1;
   pull: number = 1;
@@ -327,11 +328,11 @@ export class AppModel {
     d.mood = st.mood;
     d.moodLabel = info.label;
     d.moodShort = info.short;
-    d.eyes = look.happyEyes ? 'happy' : (look.eyeOpen < 0.3 ? 'closed' : (look.eyeOpen < 0.7 ? 'half' : 'open'));
-    d.sparkle = st.mood === 'thriving' || st.mood === 'proud';
-    d.hue = hslToHex(look.hue, 72, 62);
-    d.hueLight = hslToHex((look.hue + 10) % 360, 86, 80);
-    d.hueDark = hslToHex((look.hue + 350) % 360, 62, 42);
+    d.hue = look.hue;
+    d.glow = look.glow;
+    d.eyeOpen = look.eyeOpen;
+    d.smile = look.smile;
+    d.happyEyes = look.happyEyes;
     d.legs = look.legs;
     d.push = look.push;
     d.pull = look.pull;
@@ -406,17 +407,4 @@ export function demoSteps(nowMs: number): number {
   const h = d.getHours() + d.getMinutes() / 60;
   const ramp = Math.min(1, Math.max(0.12, (h - 7) / 12));
   return Math.round(9400 * ramp / 10) * 10;
-}
-
-export function hslToHex(h: number, s: number, l: number): string {
-  const sat = s / 100;
-  const lig = l / 100;
-  const k = (n: number): number => (n + h / 30) % 12;
-  const a = sat * Math.min(lig, 1 - lig);
-  const f = (n: number): number => lig - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const hex = (x: number): string => {
-    const v = Math.round(255 * x).toString(16);
-    return v.length === 1 ? '0' + v : v;
-  };
-  return '#' + hex(f(0)) + hex(f(8)) + hex(f(4));
 }

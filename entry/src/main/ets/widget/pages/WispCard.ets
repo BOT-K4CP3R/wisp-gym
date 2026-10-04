@@ -1,4 +1,4 @@
-import { MiniWisp } from '../common/MiniWisp';
+import { WidgetCreature } from '../common/WidgetCreature';
 
 const storage = new LocalStorage();
 
@@ -8,11 +8,12 @@ const storage = new LocalStorage();
 struct WispCard {
   @LocalStorageProp('name') name: string = 'Wisp';
   @LocalStorageProp('moodLabel') moodLabel: string = 'Curious';
-  @LocalStorageProp('eyes') eyes: string = 'open';
-  @LocalStorageProp('sparkle') sparkle: boolean = false;
-  @LocalStorageProp('hue') hue: string = '#FF8A5B';
-  @LocalStorageProp('hueLight') hueLight: string = '#FFC2A3';
-  @LocalStorageProp('hueDark') hueDark: string = '#B4502C';
+  @LocalStorageProp('mood') mood: string = 'curious';
+  @LocalStorageProp('hue') hue: number = 14;
+  @LocalStorageProp('glow') glow: number = 0.5;
+  @LocalStorageProp('eyeOpen') eyeOpen: number = 1;
+  @LocalStorageProp('smile') smile: number = 0.55;
+  @LocalStorageProp('happyEyes') happyEyes: boolean = false;
   @LocalStorageProp('legs') legs: number = 1;
   @LocalStorageProp('push') push: number = 1;
   @LocalStorageProp('pull') pull: number = 1;
@@ -55,13 +56,13 @@ struct WispCard {
       .width('100%')
 
       Stack() {
-        MiniWisp({
-          scaleBy: 0.64,
-          eyes: this.eyes,
-          sparkle: this.sparkle,
+        WidgetCreature({
+          mood: this.mood,
           hue: this.hue,
-          hueLight: this.hueLight,
-          hueDark: this.hueDark,
+          glow: this.glow,
+          eyeOpen: this.eyeOpen,
+          smile: this.smile,
+          happyEyes: this.happyEyes,
           legs: this.legs,
           push: this.push,
           pull: this.pull,

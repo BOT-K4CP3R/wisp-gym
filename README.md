@@ -142,7 +142,7 @@ entry/src/main/ets/pages/       Index (tab shell), Onboarding, Workout, Summary,
 entry/src/main/ets/views/       Home, Progress, Insights tabs
 entry/src/main/ets/widget/      2x2 and 2x4 home-screen cards, shared mini creature
 tests/                          Node tests (35) + hypium suite in entry/src/test
-scripts/                        setup, build, test, emulator, icon generation
+scripts/                        setup, build, test, emulator + browser remote, splash/icon rendering
 submission/                     scripts that build the demo video and presentation from real emulator captures
 docs/                           architecture, demo script, UX research, screenshots
 ```

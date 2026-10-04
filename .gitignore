@@ -36,3 +36,4 @@ submission/*.mp4
 submission/*.pptx
 submission/*.pdf
 release/
+.render-build/

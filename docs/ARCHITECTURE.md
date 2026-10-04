@@ -60,8 +60,10 @@ Each adapter degrades gracefully: no sensor → clear message; no vibrator → s
 - `InsightsView`: every number behind the creature's state (explainability) and how the app works.
 - `Settings`: name, goals, haptics, rest alerts, reduce motion, demo, sample data, replay intro, erase all.
 - `ui/Motion`: one place that decides whether animations, transitions and press effects run.
-- `widget/WispCard` (2×2) and `widget/WispWide` (2×4): a creature built from rounded boxes (`widget/common/MiniWisp`,
-  cards cannot host a Canvas), refreshed by `formProvider.updateForm` after workouts, settings changes, when the app
+- `components/CreatureDraw`: the creature's drawing code, pure and shared by the app Canvas, the widgets and
+  `scripts/render-creature.mjs` (splash image and launcher icon).
+- `widget/WispCard` (2×2) and `widget/WispWide` (2×4): the same creature drawn on a card Canvas
+  (`widget/common/WidgetCreature`), refreshed by `formProvider.updateForm` after workouts, settings changes, when the app
   goes to the background and by the scheduled update. The widget process re-reads Preferences from disk, because
   Preferences caches per process; widget ids live in their own file and dead ids are pruned.
 
