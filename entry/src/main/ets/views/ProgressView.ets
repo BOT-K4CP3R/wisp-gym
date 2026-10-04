@@ -290,10 +290,10 @@ export struct ProgressView {
       .margin({ top: 14 })
       if (this.rec.heaviestKg > 0) {
         Row({ space: 8 }) {
-          RecordCell({ value: formatLoad(this.rec.heaviestKg), label: 'heaviest (' + this.rec.heaviestExercise + ')' })
+          RecordCell({ value: formatLoad(this.rec.heaviestKg), label: 'heaviest ' + this.rec.heaviestExercise.toLowerCase() })
             .layoutWeight(1)
-          RecordCell({ value: groupThousands(Math.round(this.rec.volumeKg)) + ' kg', label: 'total volume' })
-            .layoutWeight(2)
+          RecordCell({ value: groupThousands(Math.round(this.rec.volumeKg)) + ' kg', label: 'total volume lifted' })
+            .layoutWeight(1)
         }
         .width('100%')
         .margin({ top: 14 })
