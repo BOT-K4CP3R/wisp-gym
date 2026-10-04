@@ -28,10 +28,10 @@ Built for **HackYeah 2026 / Huawei Challenge "Imagine What's Next"**. Lead area:
 (wellbeing, responsible design), plus *Spatial Experiences* (sensing body motion). Targets **API 20+** (compiled against API 23).
 
 <p align="center">
-  <img src="docs/screenshots/01-onboarding-welcome.jpg" width="19%">
-  <img src="docs/screenshots/04-home.jpg" width="19%">
+  <img src="docs/screenshots/16-onboarding-creature.jpg" width="19%">
   <img src="docs/screenshots/09-set-rack-it.jpg" width="19%">
-  <img src="docs/screenshots/11-summary.jpg" width="19%">
+  <img src="docs/screenshots/18-body.jpg" width="19%">
+  <img src="docs/screenshots/20-collection.jpg" width="19%">
   <img src="docs/screenshots/15-widgets.jpg" width="19%">
 </p>
 
@@ -60,7 +60,10 @@ Built for **HackYeah 2026 / Huawei Challenge "Imagine What's Next"**. Lead area:
     asleep on rest days. A small coach creature reacts live during the workout.
 12. **Badges, levels and records.** 14 badges (never taken away), a level from every rep ever counted, and all-time
     personal records.
-13. **Accessible.** Reduce-motion setting (default on emulators that render in software), AA contrast, labelled controls.
+13. **Loads, body weight and BMI.** Pick the load for each set (remembered per exercise); the summary shows volume
+    and new personal records. Log your weight, see 30/90-day/all-time charts, a goal with an ETA at your current pace,
+    and BMI with the healthy range for your height. Height, weight and goal are asked during setup (skippable).
+14. **Accessible.** Reduce-motion setting (default on emulators that render in software), AA contrast, labelled controls.
 
 Everything is computed and stored **on the phone**. The app requests no network permission.
 
@@ -99,7 +102,7 @@ Requirements: macOS or Linux, Node.js ≥ 22, JDK 17. **DevEco Studio is not req
 
 ```bash
 ./scripts/setup-macos.sh     # one-time: OpenHarmony SDK 6.1 (API 23), hvigor, ohpm (macOS; on Linux use `oniro-app cmdtools install`)
-./scripts/test.sh            # 52 unit tests on plain Node, no SDK needed
+./scripts/test.sh            # 74 unit tests on plain Node, no SDK needed
 ./scripts/build.sh           # signed debug HAP -> dist/wisp-gym.hap (throw-away development certificate, never committed)
 ./scripts/emulator-up.sh     # start the Oniro emulator (macOS: brew install qemu), install and launch
 ```
@@ -130,7 +133,7 @@ from the same source files. OS access is isolated in `platform/`. See [docs/ARCH
 | Both widgets added from the launcher, updated after workouts and settings changes | yes (emulator) |
 | Tapping a widget opens the app | yes (emulator) |
 | System permission dialog for `ACTIVITY_MOTION` with a stated reason | yes |
-| Unit tests | 52 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
+| Unit tests | 74 pass, incl. a 300-set randomised sweep (99.3% exact counts, 100% within ±1 rep) |
 | **Real** accelerometer / pedometer / vibration data | **not verifiable** on an emulator; code paths exist and fail gracefully |
 | Rep accuracy on real bodies | **not measured**; the sweep above is on synthetic traces |
 | HarmonyOS device, DevEco emulator | **not tested** |
@@ -141,13 +144,13 @@ First launch on the software-emulated Oniro emulator can take about a minute; it
 
 ```
 entry/src/main/ets/core/        pure logic: RepDetector, SetAnalyzer, WorkoutSession, LifeEngine, Plan, Mood, Profile,
-                                Species, Achievements, Store, Sim
+                                Species, Achievements, Body, Store, Sim
 entry/src/main/ets/platform/    sensors, pedometer, preferences, haptics, notifications
 entry/src/main/ets/ui/          design tokens, components, motion policy, fonts, navigation helpers
-entry/src/main/ets/pages/       Index (tab shell), Onboarding, Workout, Summary, Settings, Collection
+entry/src/main/ets/pages/       Index (tab shell), Onboarding, Workout, Summary, Settings, Collection, Body
 entry/src/main/ets/views/       Home, Progress, Insights tabs
 entry/src/main/ets/widget/      2x2 and 2x4 home-screen cards, shared mini creature
-tests/                          Node tests (52) + hypium suite in entry/src/test
+tests/                          Node tests (74) + hypium suite in entry/src/test
 scripts/                        setup, build, test, emulator + browser remote, splash/icon rendering
 submission/                     scripts that build the demo video and presentation from real emulator captures
 docs/                           architecture, demo script, UX research, screenshots
