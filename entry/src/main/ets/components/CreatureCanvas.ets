@@ -1,7 +1,7 @@
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { CreatureLook } from '../core/CreatureLook';
 import { AppModel } from '../app/AppModel';
-import { drawCreatureFit } from './CreatureDraw';
+import { drawCreature, drawCreatureFit } from './CreatureDraw';
 import { LookHolder } from './LookHolder';
 import { motionOn } from '../ui/Motion';
 
@@ -17,6 +17,7 @@ export struct CreatureCanvas {
   @Prop canvasHeight: number = 300;
   @Prop tappable: boolean = false;
   @Prop still: boolean = false;       // no idle animation (grids of many creatures)
+  @Prop portrait: boolean = false;    // close-up of the head, for small sizes
   private settings: RenderingContextSettings = new RenderingContextSettings(true);
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
   private timer: number = -1;
@@ -120,8 +121,19 @@ export struct CreatureCanvas {
     }
     c.clearRect(0, 0, this.cw, this.ch);
     this.follow();
-    drawCreatureFit(c, this.cur, (Date.now() - this.startedAt) / 1000, (Date.now() - this.holder.pokedAt) / 900,
-      this.cw, this.ch);
+    const t = (Date.now() - this.startedAt) / 1000;
+    const pokeP = (Date.now() - this.holder.pokedAt) / 900;
+    if (this.portrait) {
+      // The head sits around (170, 100) in the 340 x 320 scene; frame a 170 px box around it.
+      const s = Math.min(this.cw, this.ch) / 170;
+      c.save();
+      c.translate(this.cw / 2 - 170 * s, this.ch / 2 - 95 * s);
+      c.scale(s, s);
+      drawCreature(c, this.cur, t, pokeP);
+      c.restore();
+    } else {
+      drawCreatureFit(c, this.cur, t, pokeP, this.cw, this.ch);
+    }
   }
 
   build() {

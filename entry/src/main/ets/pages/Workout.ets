@@ -775,10 +775,13 @@ struct Workout {
         Row({ space: 10 }) {
           // The creature coaches along: its face follows the set (see setFace)
           Column() {
-            CreatureCanvas({ holder: this.buddy, label: '', canvasHeight: 52 })
+            CreatureCanvas({ holder: this.buddy, label: '', canvasHeight: 52, portrait: true })
           }
           .width(52)
           .height(52)
+          .borderRadius(26)
+          .backgroundColor(SURFACE_HI)
+          .clip(true)
           Text(this.coachText())
             .fontSize(13)
             .fontFamily(F_REG)

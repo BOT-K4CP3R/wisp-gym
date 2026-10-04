@@ -94,6 +94,7 @@ struct Collection {
       let look: CreatureLook;
       if (unlocked) {
         look = model.lookForSpecies(st, sp.id);
+        look.expression = sp.id === this.current ? 'joy' : 'happy';  // show them at their best
       } else {
         look = new CreatureLook();
         look.species = sp.id;
@@ -183,24 +184,28 @@ struct Collection {
         .opacity(slot.unlocked ? 1 : 0.35)
         if (!slot.unlocked) {
           Image($r('app.media.ic_lock')).width(18).height(18).margin({ top: 4, right: 4 })
-        } else if (slot.species.id === this.current) {
-          Tag({ text: 'YOURS', accent: true }).margin({ top: 2, right: 2 })
         }
       }
       .width('100%')
-      Text(slot.species.name)
-        .fontSize(16)
-        .fontFamily(F_BOLD)
-        .fontColor(slot.unlocked ? TEXT : TEXT_DIM)
-        .margin({ top: 4 })
+      Row({ space: 6 }) {
+        Text(slot.species.name)
+          .fontSize(16)
+          .fontFamily(F_BOLD)
+          .fontColor(slot.unlocked ? TEXT : TEXT_DIM)
+        if (slot.unlocked && slot.species.id === this.current) {
+          Tag({ text: 'YOURS', accent: true })
+        }
+      }
+      .margin({ top: 4 })
       Text(slot.unlocked ? slot.species.blurb : slot.hint)
         .fontSize(11)
         .fontFamily(F_REG)
         .fontColor(TEXT_MUTE)
-        .maxLines(2)
+        .maxLines(3)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
         .textAlign(TextAlign.Center)
-        .margin({ top: 2 })
-        .height(30)
+        .margin({ top: 4 })
+        .constraintSize({ minHeight: 44 })
     }
     .width('100%')
     .padding(12)
