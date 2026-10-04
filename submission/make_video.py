@@ -126,7 +126,6 @@ def narrate(i, text):
     out = subprocess.run([FFPROBE, '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', wav], capture_output=True, text=True).stdout
     return wav, float(out.strip())
 
-SET, EVO = seq('set'), seq('evo')
 S = lambda n: load(os.path.join(A, n))
 SCENES = [
     dict(kind='title', sub='A creature that grows from your real training', min=4.0,
@@ -137,9 +136,9 @@ SCENES = [
          say='Setup takes a minute. Pick your creature, set your goals, and add your height and weight for B M I. It all stays on the phone.'),
     dict(kind='phone', head='It lives on your training', sub='Every muscle group you train grows a part of it. Its mood comes from recovery and daily movement.', shot=S('home_pumped.jpg'), min=6.0,
          say='Your creature lives on your phone. Every muscle group you train grows a part of it, and its mood comes from recovery and daily movement.'),
-    dict(kind='phone', head='Reps counted from motion alone', sub='Phone in your pocket, any orientation. Walking and sensor noise are filtered out.', frames=SET[:8], min=9.0,
+    dict(kind='phone', head='Reps counted from motion alone', sub='Phone in your pocket, any orientation. Walking and sensor noise are filtered out.', frames=[S('set_ready.jpg'), S('set_counting.jpg')], min=9.0,
          say='Put the phone in your pocket and start a set. Reps are counted from motion alone, whatever the orientation of the phone. Walking and sensor noise are filtered out.'),
-    dict(kind='phone', head='It tells you when to stop', sub='When reps slow down and lose drive, the ring turns orange and Wisp says: rack it. The numbers are on screen.', frames=SET[8:], min=8.0,
+    dict(kind='phone', head='It tells you when to stop', sub='When reps slow down and lose drive, the ring turns orange and Wisp says: rack it. The numbers are on screen.', frames=[S('set_counting.jpg'), S('set_rack.jpg')], min=8.0,
          say='As reps slow down and lose drive, the ring fills, and Wisp tells you to rack it, with the numbers to back it up.'),
     dict(kind='phone', head='Loads, volume and records', sub='Log the weight per exercise. The summary shows volume, new personal records and what grew.', frames=[S('load.jpg'), S('summary.jpg')], min=7.0,
          say='Log the load for each exercise. The summary shows your volume, new personal records, and what grew.'),
@@ -151,8 +150,6 @@ SCENES = [
          say='Three starters, and three more creatures hatch from real milestones, with fourteen badges to earn.'),
     dict(kind='phone', head='Everything is explainable', sub='Every value comes from your sessions, computed on the phone. No account. No cloud. No AI model.', shot=S('insights.jpg'), min=6.0,
          say='Everything is explainable. Every value comes from your real sessions, computed on the phone.'),
-    dict(kind='phone', head='Two weeks, one creature', sub='A simulated fortnight, clearly labelled. Each muscle group grows its own part.', frames=EVO[:5] + [EVO[-1]], min=7.0,
-         say='Over two weeks, your training shapes it. This is a simulated fortnight, clearly labelled.'),
     dict(kind='phone', head='On your home screen', sub='Two service widgets show your creature and status without opening the app.', shot=S('widget.jpg'), min=5.0,
          say='Two home screen widgets show it without opening the app.'),
     dict(kind='list', head='Built natively for OpenHarmony', min=8.0,

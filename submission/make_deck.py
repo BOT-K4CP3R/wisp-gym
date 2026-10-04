@@ -140,15 +140,15 @@ footer(s, n)
 # 5 --- live demo frames
 s = slide(); n += 1
 title(s, 'A real set on the emulator', 'Reps climb as the ring fills; at 25% fatigue the ring turns orange and Wisp says "rack it".')
-for i, f in enumerate(['04.jpg', '08.jpg', '16.jpg']):
-    phone(s, A('set', f), 1.55 + i * 3.9, 2.3, h=4.4)
+for i, f in enumerate(['set_ready.jpg', 'set_counting.jpg', 'set_rack.jpg']):
+    phone(s, A(f), 1.55 + i * 3.9, 2.3, h=4.4)
 text(s, 0.7, 6.8, 12, 0.3, 'Emulator capture, Demo mode: a simulated accelerometer stream replayed through the same detector as the real sensor.', size=11, color=MUTE)
 footer(s, n)
 
 # 6 --- design principles
 s = slide(); n += 1
 title(s, 'Motivate, don\'t pressure', w=6.0)
-phone(s, A('home_rest.jpg'), 6.9, 1.1, h=5.5)
+phone(s, A('coach_rest.jpg'), 6.9, 1.1, h=5.5)
 phone(s, A('insights.jpg'), 9.9, 1.1, h=5.5)
 bullets(s, 0.7, 2.0, 6.0, [
     ('Non-punitive by construction', 'Levels have a floor. No streaks to lose. Never sad.'),

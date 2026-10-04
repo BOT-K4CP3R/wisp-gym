@@ -10,7 +10,7 @@ stored in this repository.
 | Tool | Role |
 |---|---|
 | **Claude Sonnet 5.5** (`claude-sonnet-5-5`) in **Claude Code** (desktop app) | first build: brainstorming the idea, architecture, all code, tests, docs, build/troubleshooting |
-| **Claude Opus 5.5** (`claude-opus-5-5`) in **Claude Code** (desktop app) | second session (v1.1–1.3): production polish, onboarding, species/expressions, badges, loads, body weight and BMI, emulator debugging, docs |
+| **Claude Opus 5.5** (`claude-opus-5-5`) in **Claude Code** (desktop app) | second session (v1.1–1.3.1): production polish, onboarding, species/expressions, badges, loads, body weight and BMI, emulator debugging, docs |
 | Claude Code **subagents** (general-purpose agents run in parallel) | UX research of comparable apps; drawing six species and eleven expressions; badge logic + tests; body-weight/BMI logic + tests; a read-only review of every screen that produced 24 findings (all fixed) |
 | Claude Code built-in browser pane | checking the emulator remote page layout |
 | Claude Code built-in tools: Bash, file Read/Write/Edit, WebSearch, WebFetch | running builds/tests, writing files, looking up OpenHarmony API docs |
@@ -85,7 +85,7 @@ and read `hilog`. The `docs/screenshots/` images are real captures from that emu
 - A `previewImages` key in `form_config.json` broke the build (schema), caught by the build, reverted.
 - The Huawei macOS command-line tools are not public; the Linux archive works because hvigor/ohpm are Node programs.
 
-## Second session: polish to v1.3 (Claude Opus 5.5)
+## Second session: polish to v1.3.1 (Claude Opus 5.5)
 
 **Main prompts (paraphrased, Polish in the original):**
 - `/goal` "polish the app, learn from top mobile apps, add a proper first-run setup, make it production-grade, test
@@ -98,6 +98,9 @@ and read `hilog`. The `docs/screenshots/` images are real captures from that emu
   for it during setup".
 - "finish: remove unused files, update README/ARCHITECTURE and version, run tests, build, commit, make it ready
   for submission against the two requirement PDFs".
+- "install the claude-remotion-skill and make a nice silent presentation video in the app's colours and vibe";
+  then "the screen floats inside the phone, remove the orange background gradients".
+- "the app icon still shows the old creature from the demo, make a new one; put it in the video as the logo".
 
 **Workflow.** Research subagent (Finch, Duolingo, Apple Fitness, WHOOP, Hevy, Gentler Streak; summarised in
 `docs/UX_RESEARCH.md`) → plan → pure core modules first with Node tests (`Profile`, `Mood`, `Plan`, `Species`,
@@ -123,6 +126,12 @@ agent.
   swapping (8 GB RAM, emulator + browsers); restarting the emulator restored normal speed.
 - The QEMU VNC pointer did not move the OpenHarmony cursor; `scripts/emu-remote.py` shows the screen in a browser
   and injects real touch events over `hdc` instead.
+- The launcher icon and the first onboarding screen still showed an early salmon-red Wisp: the species' base hue
+  only drifted to the peach seen on Home after training. The base hue was moved to that peach and the icon/splash
+  regenerated from the same drawing code (`scripts/render-creature.mjs`). The emulator launcher caches icons, so
+  checking it needed an uninstall + reinstall.
+- The first promo cut zoomed the screenshots inside a phone that itself floated, which read as the screen sliding
+  around in the bezel; the screen is now fixed to the phone and only the whole phone moves.
 - Autofocusing a text field in a sheet blocked the UI thread for >6 s on the emulator (keyboard attach); removed.
 
 ## Privacy

@@ -7,7 +7,7 @@ import { registerFonts } from '../ui/Fonts';
 import { RouteParams, navPush, navReplace } from '../ui/Nav';
 import { ACCENT, BG, F_BOLD, F_REG, HAIRLINE, PAD, SURFACE, SURFACE_HI, TEXT, TEXT_DIM, TEXT_MUTE } from '../ui/Theme';
 
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 
 @Entry
 @Component
