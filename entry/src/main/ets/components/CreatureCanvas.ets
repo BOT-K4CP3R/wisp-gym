@@ -16,6 +16,7 @@ export struct CreatureCanvas {
   @Prop label: string = '';
   @Prop canvasHeight: number = 300;
   @Prop tappable: boolean = false;
+  @Prop still: boolean = false;       // no idle animation (grids of many creatures)
   private settings: RenderingContextSettings = new RenderingContextSettings(true);
   private ctx: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings);
   private timer: number = -1;
@@ -32,7 +33,7 @@ export struct CreatureCanvas {
       if (!this.holder.active) {
         return; // hidden page: skip the frame entirely
       }
-      if (!motionOn() && !this.needsFrame()) {
+      if ((!motionOn() || this.still) && !this.needsFrame()) {
         return; // reduced motion: no idle animation, draw only when something changes
       }
       try {
@@ -41,6 +42,10 @@ export struct CreatureCanvas {
         hilog.error(0x00F0, 'WispCanvas', 'draw failed: %{public}s', JSON.stringify(e));
       }
     }, motionOn() ? 40 : 66);
+  }
+
+  private currentExpr(): string {
+    return Date.now() < this.holder.exprUntil ? this.holder.expr : this.holder.look.expression;
   }
 
   // With reduced motion the creature is still: frames are drawn only while it reacts to a tap,
@@ -58,7 +63,8 @@ export struct CreatureCanvas {
     const C = this.cur;
     const moving = Math.abs(T.legs - C.legs) + Math.abs(T.core - C.core) + Math.abs(T.push - C.push) +
       Math.abs(T.pull - C.pull) + Math.abs(T.hue - C.hue) / 50 + Math.abs(T.eyeOpen - C.eyeOpen) +
-      Math.abs(T.smile - C.smile) > 0.01 || T.mood !== C.mood || T.happyEyes !== C.happyEyes;
+      Math.abs(T.smile - C.smile) > 0.01 || T.mood !== C.mood || T.happyEyes !== C.happyEyes ||
+      T.species !== C.species || this.currentExpr() !== C.expression;
     if (moving) {
       this.idleFrames = 0;
       return true;
@@ -100,6 +106,8 @@ export struct CreatureCanvas {
     }
     C.mood = T.mood;
     C.happyEyes = T.happyEyes;
+    C.species = T.species;
+    C.expression = Date.now() < this.holder.exprUntil ? this.holder.expr : T.expression;
   }
 
   // The scene is authored in a 340x320 box and scaled to whatever size the component gets.

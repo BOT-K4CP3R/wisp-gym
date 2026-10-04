@@ -14,6 +14,7 @@ struct WispCard {
   @LocalStorageProp('eyeOpen') eyeOpen: number = 1;
   @LocalStorageProp('smile') smile: number = 0.55;
   @LocalStorageProp('happyEyes') happyEyes: boolean = false;
+  @LocalStorageProp('species') species: string = 'wisp';
   @LocalStorageProp('legs') legs: number = 1;
   @LocalStorageProp('push') push: number = 1;
   @LocalStorageProp('pull') pull: number = 1;
@@ -63,6 +64,7 @@ struct WispCard {
           eyeOpen: this.eyeOpen,
           smile: this.smile,
           happyEyes: this.happyEyes,
+          species: this.species,
           legs: this.legs,
           push: this.push,
           pull: this.pull,

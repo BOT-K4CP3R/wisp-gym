@@ -14,6 +14,8 @@ import { WorkoutSession, SessionConfig } from '../core/WorkoutSession';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
 import { TraceOptions } from '../core/Sim';
 import { MotionSource, RealAccelSource, SimulatedSource } from '../platform/MotionSource';
+import { CreatureCanvas } from '../components/CreatureCanvas';
+import { LookHolder } from '../components/LookHolder';
 import { anim, fx, motionOn, press, pageDur } from '../ui/Motion';
 
 const TAG = 'WispSet';
@@ -80,6 +82,7 @@ struct Workout {
   private countdownEnd: number = 0;
   private cueFatigue: number = new AnalyzerConfig().stopFatigue;
   private leaving: boolean = false;
+  private buddy: LookHolder = new LookHolder();
   private setStartedAt: number = 0;
   private gotSample: boolean = false;
 
@@ -87,6 +90,8 @@ struct Workout {
     registerFonts(this.getUIContext());
     const model = AppModel.get();
     this.demo = model.isDemo();
+    this.buddy.set(model.lookFor(model.evaluateNow()), true);
+    this.setFace('curious');
     const params = this.getUIContext().getRouter().getParams() as RouteParams;
     if (params !== undefined && params !== null && typeof params.exercise === 'string') {
       this.exerciseId = findExercise(params.exercise).id;
@@ -107,6 +112,14 @@ struct Workout {
       this.timer = -1;
     }
     this.keepScreenOn(false);
+  }
+
+  onPageShow(): void {
+    this.buddy.active = true;
+  }
+
+  onPageHide(): void {
+    this.buddy.active = false;
   }
 
   // System back gesture: never lose a workout by accident.
@@ -170,6 +183,7 @@ struct Workout {
 
   private beginCountdown(): void {
     this.phase = 'countdown';
+    this.setFace('focused');
     this.countdownEnd = Date.now() + COUNTDOWN_MS;
     this.countdown = 3;
     this.bumpCount();
@@ -187,6 +201,7 @@ struct Workout {
   }
 
   private cancelCountdown(): void {
+    this.setFace('curious');
     this.phase = this.session.phase() === 'rest' ? 'rest' : 'idle';
   }
 
@@ -204,6 +219,7 @@ struct Workout {
     this.setStartedAt = Date.now();
     hilog.info(0x00F1, TAG, 'startSet %{public}s demo=%{public}s', this.exerciseId, '' + this.demo);
     this.session.startSet(this.exerciseId, Date.now());
+    this.setFace('focused');
     this.phase = 'set';
     this.stopSource();
     const src = this.makeSource();
@@ -239,10 +255,14 @@ struct Workout {
       }, 140);
       if (!u.stopCue) {
         AppModel.get().tick(18);
+        if (!this.cue) {
+          this.buddy.express('happy', 450);
+        }
       }
     }
     if (u.stopCue) {
       this.cue = true;
+      this.setFace('strain');
       this.emphasizeRing();
       AppModel.get().tick(400); // the stronger cue replaces the rep tick
     }
@@ -294,6 +314,8 @@ struct Workout {
       this.restTotal = Math.max(1, this.session.restTotalMs());
       if (this.restLeft <= 0 && !this.restNotified) {
         this.restNotified = true;
+        this.setFace('curious');
+        this.buddy.express('surprised', 1200);
         const model = AppModel.get();
         if (model.profile().restAlerts) {
           model.tick(300);
@@ -316,6 +338,8 @@ struct Workout {
 
   private afterSetEnded(): void {
     this.stopSource();
+    this.setFace('happy');
+    this.buddy.express('proud', 1600);
     const all: SetRecord[] = this.session.sets();
     this.sets = all.length;
     let total = 0;
@@ -344,6 +368,7 @@ struct Workout {
   }
 
   private skipRest(): void {
+    this.setFace('curious');
     this.session.skipRest();
     this.restLeft = 0;
     this.phase = 'idle';
@@ -495,6 +520,11 @@ struct Workout {
         'No motion data from the sensor. Tap here to use Demo mode instead.';
     }
     return this.hint();
+  }
+
+  // Resting face of the little coach for the current phase; moments use buddy.express().
+  private setFace(face: string): void {
+    this.buddy.look.expression = face;
   }
 
   private onPrimary(): void {
@@ -743,11 +773,12 @@ struct Workout {
       // Coaching line (fatigue explanation, placement, rest)
       Column() {
         Row({ space: 10 }) {
-          Image(this.cue && this.phase === 'set' ? $r('app.media.ic_bolt_accent') :
-            (this.phase === 'rest' ? $r('app.media.ic_moon') : $r('app.media.ic_phone')))
-            .width(20)
-            .height(20)
-            .opacity(this.cue && this.phase === 'set' ? 1 : 0.6)
+          // The creature coaches along: its face follows the set (see setFace)
+          Column() {
+            CreatureCanvas({ holder: this.buddy, label: '', canvasHeight: 52 })
+          }
+          .width(52)
+          .height(52)
           Text(this.coachText())
             .fontSize(13)
             .fontFamily(F_REG)

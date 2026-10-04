@@ -1,5 +1,6 @@
 import { GROUPS, clamp } from './Types';
 import { CreatureState } from './LifeEngine';
+import { findSpecies } from './Species';
 
 // Pure mapping from creature state to drawing parameters. The UI (Canvas / widget) only
 // consumes these numbers, so the look is testable and identical on every surface.
@@ -16,10 +17,13 @@ export class CreatureLook {
   bob: number = 0.5;     // idle animation amplitude
   mood: string = 'curious';
   happyEyes: boolean = false; // closed, upturned "^ ^" eyes
+  species: string = 'wisp';   // one of SPECIES (see Species.ets): body features and palette
+  expression: string = '';    // momentary face override ('' = from mood), see EXPRESSIONS
 }
 
-export function lookFor(state: CreatureState, seed: number): CreatureLook {
+export function lookFor(state: CreatureState, seed: number, species?: string): CreatureLook {
   const look = new CreatureLook();
+  look.species = species === undefined ? 'wisp' : species;
   const scale = (lvl: number): number => 0.86 + lvl * 0.5;
   look.legs = scale(state.levels[GROUPS.indexOf('legs')]);
   look.push = scale(state.levels[GROUPS.indexOf('push')]);
@@ -35,8 +39,8 @@ export function lookFor(state: CreatureState, seed: number): CreatureLook {
   }
   // Hue stays in the warm coral-to-amber family so the creature always matches the app accent;
   // the seed gives each creature its own shade, the dominant muscle group nudges it.
-  const base = 8 + (Math.abs(seed) % 14);
-  look.hue = base + dominant * 6;
+  const sp = findSpecies(look.species);
+  look.hue = (sp.hueBase - 6 + (Math.abs(seed) % 14) + dominant * 4 + 360) % 360;
   look.glow = clamp(0.25 + 0.5 * state.recover + 0.25 * state.move, 0, 1);
   look.mood = state.mood;
 

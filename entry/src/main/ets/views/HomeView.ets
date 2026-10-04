@@ -1,8 +1,10 @@
 import { AppModel } from '../app/AppModel';
 import { CreatureState } from '../core/LifeEngine';
 import { moodInfo } from '../core/Mood';
-import { NextAction, WeekStats, formatSteps, timeOfDayGreeting } from '../core/Plan';
+import { LevelInfo, NextAction, WeekStats, formatSteps, levelFor, timeOfDayGreeting } from '../core/Plan';
 import { GROUPS } from '../core/Types';
+import { Achievement } from '../core/Achievements';
+import { SPECIES, findSpecies } from '../core/Species';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { ActivityDots, Button56, IconButton, MetricBar, Reveal, RingNumber, Tag, Tile, TitleBlock } from '../ui/Kit';
@@ -33,9 +35,26 @@ export struct HomeView {
   @State action: NextAction = new NextAction();
   @State greeting: string = '';
   @State loaded: boolean = false;
+  // Tiles are added over three frames: on slow (software-rendered) devices building every
+  // tile in the first frame took longer than the system's 6 s main-thread watchdog.
+  @State stage: number = 0;
+  @State badgesDone: number = 0;
+  @State level: LevelInfo = new LevelInfo();
+  @State speciesName: string = 'Wisp';
+  @State badgesTotal: number = 0;
+  @State creaturesOpen: number = 1;
+  @State nextBadge: string = '';
+  @State nextDetail: string = '';
+  @State nextPct: number = 0;
 
   aboutToAppear(): void {
     this.reload();
+    setTimeout(() => {
+      this.stage = 1;
+      setTimeout(() => {
+        this.stage = 2;
+      }, 120);
+    }, 120);
   }
 
   // Tapping the active tab again returns to the top, as in platform apps.
@@ -51,6 +70,9 @@ export struct HomeView {
     this.weeklyGoal = p.weeklyGoal;
     this.demo = model.isDemo();
     this.greeting = timeOfDayGreeting(Date.now());
+    this.loadCollection();
+    this.level = levelFor(model.totalReps());
+    this.speciesName = findSpecies(p.species).name;
     // Show the cached state at once, then refine with a fresh step reading.
     this.apply(model.evaluateNow(), model.stepsToday());
     model.state().then((st: CreatureState) => {
@@ -75,6 +97,32 @@ export struct HomeView {
     this.todayIndex = 28 + dow;
     this.holder.set(model.lookFor(st), !this.loaded);
     this.loaded = true;
+  }
+
+  // The closest badge still to earn drives the "next badge" line on the collection tile.
+  private loadCollection(): void {
+    const model = AppModel.get();
+    const list: Achievement[] = model.achievements();
+    let done = 0;
+    let best: Achievement | null = null;
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (a.unlocked) {
+        done++;
+      } else if (best === null || a.progress / a.goal > best.progress / best.goal) {
+        best = a;
+      }
+    }
+    this.badgesDone = done;
+    this.badgesTotal = list.length;
+    this.creaturesOpen = model.unlockedSpecies().length;
+    if (best !== null) {
+      this.nextBadge = best.title;
+      this.nextDetail = best.detail;
+      this.nextPct = Math.min(1, best.progress / best.goal);
+    } else {
+      this.nextBadge = '';
+    }
   }
 
   private activeDays(): number {
@@ -134,6 +182,7 @@ export struct HomeView {
       if (this.demo) {
         Tag({ text: 'DEMO', accent: true })
       }
+      IconButton({ icon: $r('app.media.ic_trophy'), label: 'Collection', onTap: () => this.onNavigate('collection') })
       IconButton({ icon: $r('app.media.ic_sliders'), label: 'Settings', onTap: () => this.onNavigate('settings') })
     }
     .width('100%')
@@ -143,7 +192,18 @@ export struct HomeView {
   @Builder
   CreatureTile() {
     Tile({ pad: 16 }) {
-      CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 230, tappable: true })
+      Stack({ alignContent: Alignment.TopStart }) {
+        CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 230, tappable: true })
+        Text('Lv ' + this.level.level)
+          .fontSize(12)
+          .fontFamily(F_BOLD)
+          .fontColor(ACCENT)
+          .padding({ left: 10, right: 10, top: 5, bottom: 5 })
+          .borderRadius(12)
+          .backgroundColor(ACCENT_TINT)
+          .margin({ top: 4, left: 4 })
+      }
+      .width('100%')
       Row({ space: 12 }) {
         Column() {
           Text(moodInfo(this.state.mood).label)
@@ -161,6 +221,27 @@ export struct HomeView {
       }
       .width('100%')
       .padding({ left: 4, right: 4, top: 4 })
+      Column({ space: 6 }) {
+        Row() {
+          Text(this.speciesName + '  ·  level ' + this.level.level)
+            .fontSize(12)
+            .fontFamily(F_BOLD)
+            .fontColor(TEXT_DIM)
+            .layoutWeight(1)
+          Text(this.level.into + ' / ' + this.level.need + ' XP')
+            .fontSize(12)
+            .fontFamily(F_REG)
+            .fontColor(TEXT_MUTE)
+        }
+        .width('100%')
+        Progress({ value: Math.round(100 * this.level.into / this.level.need), total: 100, type: ProgressType.Linear })
+          .width('100%')
+          .color(ACCENT)
+          .backgroundColor(TRACK)
+          .style({ strokeWidth: 4, strokeRadius: 2, enableSmoothEffect: motionOn() })
+      }
+      .width('100%')
+      .padding({ left: 4, right: 4, top: 12 })
     }
   }
 
@@ -302,6 +383,44 @@ export struct HomeView {
   }
 
   @Builder
+  CollectionTile() {
+    Tile({ pad: 20, tappable: true, onTap: () => this.onNavigate('collection') }) {
+      Row() {
+        TitleBlock({
+          title: 'Collection',
+          subtitle: this.creaturesOpen + ' of ' + SPECIES.length + ' creatures  ·  ' + this.badgesDone + ' of ' +
+            this.badgesTotal + ' badges'
+        })
+        Blank()
+        Image($r('app.media.ic_trophy_accent'))
+          .width(40)
+          .height(40)
+          .padding(10)
+          .borderRadius(20)
+          .backgroundColor(ACCENT_TINT)
+      }
+      .width('100%')
+      if (this.nextBadge.length > 0) {
+        Column({ space: 6 }) {
+          Row() {
+            Text('Next: ' + this.nextBadge).fontSize(13).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
+            Text(Math.round(this.nextPct * 100) + '%').fontSize(12).fontFamily(F_BOLD).fontColor(ACCENT)
+          }
+          .width('100%')
+          Progress({ value: Math.round(this.nextPct * 100), total: 100, type: ProgressType.Linear })
+            .width('100%')
+            .color(ACCENT)
+            .backgroundColor(TRACK)
+            .style({ strokeWidth: 6, strokeRadius: 3, enableSmoothEffect: motionOn() })
+          Text(this.nextDetail).fontSize(12).fontFamily(F_REG).fontColor(TEXT_MUTE).width('100%')
+        }
+        .width('100%')
+        .margin({ top: 14 })
+      }
+    }
+  }
+
+  @Builder
   MusclesTile() {
     Tile({ pad: 20, tappable: true, onTap: () => this.onNavigate('insights') }) {
       TitleBlock({ title: 'Muscle groups', subtitle: 'Each one grows a part of ' + this.name })
@@ -355,20 +474,27 @@ export struct HomeView {
         Reveal({ delay: STAGGER }) {
           this.ActionCard()
         }
-        Reveal({ delay: STAGGER * 2 }) {
-          this.StatRow()
+        if (this.stage >= 1) {
+          Reveal({ delay: STAGGER * 2 }) {
+            this.StatRow()
+          }
+          Reveal({ delay: STAGGER * 3 }) {
+            this.RecoveryTile()
+          }
+          Reveal({ delay: STAGGER * 4 }) {
+            this.WeekTile()
+          }
         }
-        Reveal({ delay: STAGGER * 3 }) {
-          this.RecoveryTile()
-        }
-        Reveal({ delay: STAGGER * 4 }) {
-          this.WeekTile()
-        }
-        Reveal({ delay: STAGGER * 5 }) {
-          this.MusclesTile()
-        }
-        Reveal({ delay: STAGGER * 6 }) {
-          this.ActivityTile()
+        if (this.stage >= 2) {
+          Reveal({ delay: STAGGER }) {
+            this.CollectionTile()
+          }
+          Reveal({ delay: STAGGER * 2 }) {
+            this.MusclesTile()
+          }
+          Reveal({ delay: STAGGER * 3 }) {
+            this.ActivityTile()
+          }
         }
         Blank().height(104)
       }

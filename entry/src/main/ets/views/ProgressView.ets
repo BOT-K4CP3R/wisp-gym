@@ -3,7 +3,8 @@ import { LifeEngine, CreatureState } from '../core/LifeEngine';
 import { lookFor } from '../core/CreatureLook';
 import { WorkoutRecord, SetRecord, findExercise } from '../core/Types';
 import { generateHistory } from '../core/Sim';
-import { WeekStats, dayLabel, formatDuration, repsOf } from '../core/Plan';
+import { Records, WeekStats, dayLabel, formatDuration, records, repsOf } from '../core/Plan';
+import { groupThousands } from '../core/Types';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, EmptyState, InfoRow, Reveal, SectionLabel, Tag, Tile } from '../ui/Kit';
@@ -62,6 +63,22 @@ function deltaText(now: number, prev: number): string {
   return (d > 0 ? '+' : '') + d + ' vs last wk';
 }
 
+// One stat in the records tile. A component (not a @Builder) so values refresh on reload.
+@Component
+struct RecordCell {
+  @Prop value: string = '';
+  @Prop label: string = '';
+
+  build() {
+    Column({ space: 2 }) {
+      Text(this.value).fontSize(20).fontFamily(F_BOLD).fontColor(TEXT).maxLines(1)
+      Text(this.label).fontSize(11).fontFamily(F_REG).fontColor(TEXT_MUTE).maxLines(1)
+    }
+    .alignItems(HorizontalAlign.Start)
+    .width('100%')
+  }
+}
+
 @Component
 export struct ProgressView {
   @Prop @Watch('reload') version: number = 0;
@@ -73,6 +90,7 @@ export struct ProgressView {
   @State bars: DayBar[] = [];
   @State sessions: SessionRow[] = [];
   @State total: number = 0;
+  @State rec: Records = new Records();
   @State playing: boolean = false;
   @State lapseLabel: string = '';
   @State showDetail: boolean = false;
@@ -109,6 +127,7 @@ export struct ProgressView {
     const now = Date.now();
     this.week = model.weekStats();
     this.total = ws.length;
+    this.rec = records(ws, now);
 
     const rows: SessionRow[] = [];
     for (let i = ws.length - 1; i >= 0 && rows.length < 30; i--) {
@@ -224,6 +243,40 @@ export struct ProgressView {
   }
 
   @Builder
+  RecordsTile() {
+    Tile({ pad: 20 }) {
+      Row() {
+        Text('Personal records').fontSize(16).fontFamily(F_BOLD).fontColor(TEXT).layoutWeight(1)
+        Text(this.rec.activeDays + (this.rec.activeDays === 1 ? ' active day' : ' active days'))
+          .fontSize(12)
+          .fontFamily(F_REG)
+          .fontColor(TEXT_MUTE)
+      }
+      .width('100%')
+      Row({ space: 8 }) {
+        RecordCell({ value: groupThousands(this.rec.reps), label: 'total reps' })
+          .layoutWeight(1)
+        RecordCell({ value: '' + this.rec.sessions, label: 'sessions' })
+          .layoutWeight(1)
+        RecordCell({ value: '' + this.rec.bestSet, label: 'best set' })
+          .layoutWeight(1)
+      }
+      .width('100%')
+      .margin({ top: 14 })
+      Row({ space: 8 }) {
+        RecordCell({ value: '' + this.rec.bestSession, label: 'best session reps' })
+          .layoutWeight(1)
+        RecordCell({ value: this.rec.longestMs > 0 ? formatDuration(this.rec.longestMs) : '-', label: 'longest session' })
+          .layoutWeight(1)
+        RecordCell({ value: this.rec.favorite.length > 0 ? this.rec.favorite : '-', label: 'favourite' })
+          .layoutWeight(1)
+      }
+      .width('100%')
+      .margin({ top: 14 })
+    }
+  }
+
+  @Builder
   DetailSheet() {
     Column() {
       Text(this.detailTitle).fontSize(22).fontFamily(F_BOLD).fontColor(TEXT).width('100%')
@@ -315,6 +368,12 @@ export struct ProgressView {
             }
             .width('100%')
             .margin({ top: 12 })
+          }
+        }
+
+        if (this.rec.sessions > 0) {
+          Reveal({ delay: STAGGER * 2 }) {
+            this.RecordsTile()
           }
         }
 

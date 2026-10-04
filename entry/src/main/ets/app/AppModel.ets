@@ -11,8 +11,10 @@ import { Profile, ProfileStore, reducedMotion } from '../core/Profile';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { setMotion } from '../ui/Motion';
 import { moodInfo } from '../core/Mood';
-import { NextAction, WeekStats, WorkoutSummary, formatSteps, nextAction, summarize, weekStats } from '../core/Plan';
+import { NextAction, WeekStats, WorkoutSummary, formatSteps, levelFor, nextAction, repsOf, summarize, weekStats } from '../core/Plan';
 import { AnalyzerConfig } from '../core/SetAnalyzer';
+import { Achievement, evaluateAchievements, newlyUnlocked, unlockedSpecies } from '../core/Achievements';
+import { findSpecies } from '../core/Species';
 import { PrefsStore } from '../platform/PrefsStore';
 import { StepService } from '../platform/StepService';
 import { Notifier } from '../platform/Notifier';
@@ -23,6 +25,8 @@ const DOMAIN = 0x0010;
 const KEY_DEMO = 'demo.mode';
 const KEY_FORMS = 'form.ids';
 const KEY_STEPS = 'steps.today';
+const KEY_STEPS_BEST = 'steps.best';
+const KEY_BADGES = 'badges.v1';
 const DEMO_SEED = 20261003;
 const FORM_NOT_EXIST = 16501001;
 
@@ -41,6 +45,7 @@ export class WidgetData {
   eyeOpen: number = 1;
   smile: number = 0.55;
   happyEyes: boolean = false;
+  species: string = 'wisp';
   legs: number = 1;
   push: number = 1;
   pull: number = 1;
@@ -82,6 +87,10 @@ export class AppModel {
   private notifier: Notifier | null = null;
   private lastSteps: number = -1;
   private summary: WorkoutSummary | null = null;
+  private cache: WorkoutRecord[] | null = null;
+  private badgeCache: Achievement[] | null = null;
+  private badgeGoal: number = -1;
+  private profileCache: Profile | null = null;
 
   init(context: common.Context): void {
     if (this.context !== null) {
@@ -99,6 +108,8 @@ export class AppModel {
 
   // The widget process has its own Preferences cache; drop it so it sees the app's writes.
   reloadFromDisk(): void {
+    this.changed();
+    this.profileCache = null;
     if (this.prefs !== null) {
       this.prefs.reload();
     }
@@ -111,12 +122,28 @@ export class AppModel {
 
   // ---- Profile ----------------------------------------------------------------------
 
+  // Cached: called on every rep tick and render. Returns a copy so callers may edit it.
   profile(): Profile {
-    return this.profiles.load();
+    if (this.profileCache === null) {
+      this.profileCache = this.profiles.load();
+    }
+    const c = this.profileCache;
+    const p = new Profile();
+    p.name = c.name;
+    p.stepGoal = c.stepGoal;
+    p.weeklyGoal = c.weeklyGoal;
+    p.onboarded = c.onboarded;
+    p.haptics = c.haptics;
+    p.restAlerts = c.restAlerts;
+    p.motion = c.motion;
+    p.species = c.species;
+    return p;
   }
 
   saveProfile(p: Profile): void {
     this.profiles.save(p);
+    this.profileCache = null;
+    this.badgeCache = null;
     this.applyMotion();
     this.pushWidget();
   }
@@ -153,18 +180,102 @@ export class AppModel {
 
   // ---- History ----------------------------------------------------------------------
 
+  // Parsed history, cached until it changes (parsing and validating the JSON on every call
+  // made the first frame of Home take seconds on slow devices). Treat as read-only.
   workouts(): WorkoutRecord[] {
-    return this.store.load();
+    if (this.cache === null) {
+      this.cache = this.store.load();
+    }
+    return this.cache;
+  }
+
+  private changed(): void {
+    this.cache = null;
+    this.badgeCache = null;
   }
 
   // Stores a finished workout and prepares the summary screen (before/after levels).
   finishWorkout(w: WorkoutRecord): WorkoutSummary {
     const before = this.evaluateNow();
+    const badgesBefore = this.achievements();
+    const xpBefore = this.totalReps();
+    const speciesBefore = unlockedSpecies(badgesBefore);
     this.store.add(w);
+    this.changed();
     const after = this.evaluateNow();
     this.summary = summarize(w, before, after, new AnalyzerConfig().stopFatigue);
+    const badgesAfter = this.achievements();
+    this.summary.levelBefore = levelFor(xpBefore).level;
+    this.summary.levelAfter = levelFor(this.totalReps()).level;
+    this.summary.newBadges = newlyUnlocked(badgesBefore, badgesAfter).map((a: Achievement) => a.title);
+    this.summary.newSpecies = unlockedSpecies(badgesAfter)
+      .filter((id: string) => speciesBefore.indexOf(id) < 0)
+      .map((id: string) => findSpecies(id).name);
     this.pushWidget();
     return this.summary;
+  }
+
+  // ---- Badges and creatures -------------------------------------------------------------
+
+  // Badges are computed from history and then merged with every badge ever earned, so a
+  // badge never disappears (deleted history, a higher weekly goal): nothing is taken away.
+  achievements(): Achievement[] {
+    const goal = this.profile().weeklyGoal;
+    if (this.badgeCache !== null && this.badgeGoal === goal) {
+      return this.badgeCache;
+    }
+    const list = evaluateAchievements(this.workouts(), Date.now(), goal, this.stepsBest());
+    const kept = this.keptBadges();
+    let changed = false;
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      const at = kept.indexOf(a.id);
+      if (!a.unlocked && at >= 0) {
+        a.unlocked = true;
+        a.progress = a.goal;
+      } else if (a.unlocked && at < 0) {
+        kept.push(a.id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.kv.put(KEY_BADGES, JSON.stringify(kept));
+    }
+    this.badgeCache = list;
+    this.badgeGoal = goal;
+    return list;
+  }
+
+  unlockedSpecies(): string[] {
+    return unlockedSpecies(this.achievements());
+  }
+
+  private keptBadges(): string[] {
+    const raw = this.kv.get(KEY_BADGES);
+    if (raw.length === 0) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as string[];
+      return parsed instanceof Array ? parsed.filter((v: string) => typeof v === 'string') : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Experience = every rep ever counted (never decreases).
+  totalReps(): number {
+    const ws = this.workouts();
+    let n = 0;
+    for (let i = 0; i < ws.length; i++) {
+      n += repsOf(ws[i]);
+    }
+    return n;
+  }
+
+  stepsBest(): number {
+    const n = parseInt(this.kv.get(KEY_STEPS_BEST), 10);
+    return isNaN(n) ? 0 : n;
   }
 
   lastSummary(): WorkoutSummary | null {
@@ -177,22 +288,28 @@ export class AppModel {
     for (let i = 0; i < all.length; i++) {
       this.store.add(all[i]);
     }
+    this.changed();
     this.setDemo(true);
     this.pushWidget();
   }
 
   resetHistory(): void {
     this.store.clear();
+    this.changed();
     this.pushWidget();
   }
 
   // Erases history, profile and demo mode: the app starts over with the introduction.
   resetAll(): void {
     this.store.clear();
+    this.changed();
     this.store.resetSeed();
     this.kv.put(KEY_DEMO, '0');
     this.kv.put(KEY_STEPS, '');
+    this.kv.put(KEY_STEPS_BEST, '');
+    this.kv.put(KEY_BADGES, '');
     this.profiles.save(new Profile());
+    this.profileCache = null;
     this.summary = null;
     this.pushWidget();
   }
@@ -248,6 +365,9 @@ export class AppModel {
     }
     this.lastSteps = v;
     this.kv.put(KEY_STEPS, dayKey(Date.now()) + '|' + v);
+    if (v > this.stepsBest() && !this.isDemo()) {
+      this.kv.put(KEY_STEPS_BEST, '' + v);
+    }
     return v;
   }
 
@@ -292,7 +412,11 @@ export class AppModel {
   }
 
   lookFor(state: CreatureState): CreatureLook {
-    return lookFor(state, this.seed());
+    return lookFor(state, this.seed(), this.profile().species);
+  }
+
+  lookForSpecies(state: CreatureState, species: string): CreatureLook {
+    return lookFor(state, this.seed(), species);
   }
 
   // Light confirmation tick, respecting the user's haptics setting.
@@ -333,6 +457,7 @@ export class AppModel {
     d.eyeOpen = look.eyeOpen;
     d.smile = look.smile;
     d.happyEyes = look.happyEyes;
+    d.species = look.species;
     d.legs = look.legs;
     d.push = look.push;
     d.pull = look.pull;

@@ -265,6 +265,10 @@ export class WorkoutSummary {
   exercises: ExerciseLine[] = [];
   gains: GroupGain[] = [];
   simulated: boolean = false;
+  newBadges: string[] = [];   // titles of badges earned by this workout
+  newSpecies: string[] = [];  // names of creatures this workout unlocked
+  levelBefore: number = 1;
+  levelAfter: number = 1;
 }
 
 export function summarize(rec: WorkoutRecord, before: CreatureState, after: CreatureState, cueFatigue: number): WorkoutSummary {
@@ -304,4 +308,100 @@ export function summarize(rec: WorkoutRecord, before: CreatureState, after: Crea
     }
   }
   return s;
+}
+
+// ---- Personal records (all time) ---------------------------------------------------
+
+export class Records {
+  sessions: number = 0;
+  sets: number = 0;
+  reps: number = 0;
+  bestSet: number = 0;          // most reps in one set
+  bestSetExercise: string = '';
+  bestSession: number = 0;      // most reps in one session
+  longestMs: number = 0;        // longest session
+  favorite: string = '';        // exercise with the most sets
+  activeDays: number = 0;       // distinct days with a session
+}
+
+export function records(workouts: WorkoutRecord[], nowMs: number): Records {
+  const r = new Records();
+  const names: string[] = [];
+  const counts: number[] = [];
+  const days: string[] = [];
+  for (let i = 0; i < workouts.length; i++) {
+    const w = workouts[i];
+    const end = w.endMs > 0 ? w.endMs : w.startMs;
+    if (end > nowMs) {
+      continue;
+    }
+    let reps = 0;
+    let counted = 0;
+    for (let k = 0; k < w.sets.length; k++) {
+      const set = w.sets[k];
+      if (set.reps <= 0) {
+        continue;
+      }
+      counted++;
+      reps += set.reps;
+      if (set.reps > r.bestSet) {
+        r.bestSet = set.reps;
+        r.bestSetExercise = findExercise(set.exercise).name;
+      }
+      const n = findExercise(set.exercise).name;
+      const at = names.indexOf(n);
+      if (at < 0) {
+        names.push(n);
+        counts.push(1);
+      } else {
+        counts[at]++;
+      }
+    }
+    if (counted === 0) {
+      continue;
+    }
+    r.sessions++;
+    r.sets += counted;
+    r.reps += reps;
+    r.bestSession = Math.max(r.bestSession, reps);
+    r.longestMs = Math.max(r.longestMs, Math.max(0, end - w.startMs));
+    const d = new Date(end);
+    const key = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+    if (days.indexOf(key) < 0) {
+      days.push(key);
+    }
+  }
+  let best = -1;
+  for (let i = 0; i < names.length; i++) {
+    if (counts[i] > best) {
+      best = counts[i];
+      r.favorite = names[i];
+    }
+  }
+  r.activeDays = days.length;
+  return r;
+}
+
+// ---- Experience levels -------------------------------------------------------------
+// One rep = one XP. Levels get gradually longer (level n needs 40 + 20 * (n - 1) XP) and
+// never go down: experience is cumulative, unlike strength, which fades without training.
+
+export class LevelInfo {
+  level: number = 1;
+  into: number = 0;    // XP gained inside the current level
+  need: number = 40;   // XP the current level needs
+}
+
+export function levelFor(xp: number): LevelInfo {
+  const info = new LevelInfo();
+  let left = Math.max(0, Math.floor(xp));
+  let need = 40;
+  while (left >= need && info.level < 99) {
+    left -= need;
+    info.level++;
+    need += 20;
+  }
+  info.into = left;
+  info.need = need;
+  return info;
 }

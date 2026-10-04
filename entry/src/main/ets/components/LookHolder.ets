@@ -11,6 +11,14 @@ export class LookHolder {
   pokedAt: number = 0;
   // When true the next look is shown at once instead of morphing towards it.
   snap: boolean = true;
+  // A momentary face ('focused', 'strain', 'joy', ...) shown until exprUntil (ms).
+  expr: string = '';
+  exprUntil: number = 0;
+
+  express(expression: string, ms: number): void {
+    this.expr = expression;
+    this.exprUntil = Date.now() + ms;
+  }
 
   poke(): void {
     this.pokedAt = Date.now();

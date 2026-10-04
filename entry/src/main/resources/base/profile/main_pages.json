@@ -4,6 +4,7 @@
     "pages/Onboarding",
     "pages/Workout",
     "pages/Summary",
-    "pages/Settings"
+    "pages/Settings",
+    "pages/Collection"
   ]
 }

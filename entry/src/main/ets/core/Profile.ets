@@ -1,4 +1,5 @@
 import { KeyValueStore } from './Store';
+import { SPECIES } from './Species';
 
 // The user's personal settings, chosen during onboarding and editable in Settings.
 // Stored as validated JSON, so a corrupt value falls back to safe defaults.
@@ -17,6 +18,16 @@ export class Profile {
   haptics: boolean = true;
   restAlerts: boolean = true;   // notification + buzz when a rest timer ends
   motion: string = 'auto';      // auto | full | reduced
+  species: string = 'wisp';     // the creature being raised (see Species.ets)
+}
+
+function validSpecies(id: string): boolean {
+  for (let i = 0; i < SPECIES.length; i++) {
+    if (SPECIES[i].id === id) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export const MOTION_MODES: string[] = ['auto', 'full', 'reduced'];
@@ -89,6 +100,7 @@ export class ProfileStore {
     p.haptics = raw.haptics !== false;
     p.restAlerts = raw.restAlerts !== false;
     p.motion = MOTION_MODES.indexOf(raw.motion) >= 0 ? raw.motion : 'auto';
+    p.species = validSpecies(raw.species) ? raw.species : 'wisp';
     return p;
   }
 
@@ -101,6 +113,7 @@ export class ProfileStore {
     clean.haptics = p.haptics !== false;
     clean.restAlerts = p.restAlerts !== false;
     clean.motion = MOTION_MODES.indexOf(p.motion) >= 0 ? p.motion : 'auto';
+    clean.species = validSpecies(p.species) ? p.species : 'wisp';
     this.kv.put(KEY_PROFILE, JSON.stringify(clean));
   }
 }

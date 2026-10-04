@@ -11,6 +11,7 @@ export struct WidgetCreature {
   @Prop @Watch('redraw') eyeOpen: number = 1;
   @Prop @Watch('redraw') smile: number = 0.55;
   @Prop @Watch('redraw') happyEyes: boolean = false;
+  @Prop @Watch('redraw') species: string = 'wisp';
   @Prop @Watch('redraw') legs: number = 1;
   @Prop @Watch('redraw') push: number = 1;
   @Prop @Watch('redraw') pull: number = 1;
@@ -30,6 +31,7 @@ export struct WidgetCreature {
     L.eyeOpen = this.eyeOpen;
     L.smile = this.smile;
     L.happyEyes = this.happyEyes;
+    L.species = this.species;
     L.legs = this.legs;
     L.push = this.push;
     L.pull = this.pull;

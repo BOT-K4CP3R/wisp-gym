@@ -18,6 +18,9 @@ struct Index {
   @State tab: string = 'home';
   @State version: number = 0;
   @State topSignal: number = 0;
+  // Tabs other than Home are built on first visit, keeping the first frame light.
+  @State seenProgress: boolean = false;
+  @State seenInsights: boolean = false;
   @StorageProp(NAV_TARGET) @Watch('onNavTarget') navTarget: string = '';
   private homeHolder: LookHolder = new LookHolder();
   private progressHolder: LookHolder = new LookHolder();
@@ -78,6 +81,10 @@ struct Index {
       navPush(this.getUIContext(), 'pages/Settings');
       return;
     }
+    if (target === 'collection') {
+      navPush(this.getUIContext(), 'pages/Collection');
+      return;
+    }
     const idx = TABS.indexOf(target);
     if (idx < 0) {
       return;
@@ -86,6 +93,11 @@ struct Index {
       AppModel.get().tick(8);
     } else {
       this.topSignal++;
+    }
+    if (target === 'progress') {
+      this.seenProgress = true;
+    } else if (target === 'insights') {
+      this.seenInsights = true;
     }
     this.tab = target;
     this.tabs.changeIndex(idx);
@@ -101,14 +113,18 @@ struct Index {
             .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
         }
         TabContent() {
-          ProgressView({ version: this.version, topSignal: this.topSignal, active: this.tab === 'progress', holder: this.progressHolder })
-            .opacity(this.tab === 'progress' ? 1 : 0)
-            .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
+          if (this.seenProgress) {
+            ProgressView({ version: this.version, topSignal: this.topSignal, active: this.tab === 'progress', holder: this.progressHolder })
+              .opacity(this.tab === 'progress' ? 1 : 0)
+              .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
+          }
         }
         TabContent() {
-          InsightsView({ version: this.version, topSignal: this.topSignal })
-            .opacity(this.tab === 'insights' ? 1 : 0)
-            .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
+          if (this.seenInsights) {
+            InsightsView({ version: this.version, topSignal: this.topSignal })
+              .opacity(this.tab === 'insights' ? 1 : 0)
+              .animation(anim({ duration: DUR_FAST * 1.5, curve: Curve.EaseOut }))
+          }
         }
       }
       .barHeight(0)

@@ -2,6 +2,7 @@ import { AppModel } from '../app/AppModel';
 import { CreatureLook } from '../core/CreatureLook';
 import { NAME_MAX, Profile, sanitizeName } from '../core/Profile';
 import { formatSteps } from '../core/Plan';
+import { SPECIES, Species, findSpecies } from '../core/Species';
 import { CreatureCanvas } from '../components/CreatureCanvas';
 import { LookHolder } from '../components/LookHolder';
 import { Button56, Chip, IconButton } from '../ui/Kit';
@@ -16,7 +17,8 @@ const STEP_FX: TransitionEffect = TransitionEffect.asymmetric(
   TransitionEffect.OPACITY.combine(TransitionEffect.translate({ x: 36 })),
   TransitionEffect.OPACITY
 );
-const NAMES: string[] = ['Wisp', 'Mochi', 'Ember', 'Pip', 'Nova'];
+const NAMES: string[] = ['Wisp', 'Mochi', 'Ember', 'Pip', 'Nova', 'Bao'];
+const STARTERS: Species[] = SPECIES.filter((s: Species) => s.unlock.length === 0);
 const WEEKLY: number[] = [2, 3, 4, 5];
 const STEP_GOALS: number[] = [6000, 8000, 10000, 12000];
 
@@ -39,13 +41,14 @@ class Feature {
 struct Onboarding {
   @State step: number = 0;
   @State name: string = 'Wisp';
+  @State species: string = 'wisp';
   @State weekly: number = 3;
   @State stepGoal: number = 8000;
   @State useDemo: boolean = false;
   @State replay: boolean = false;
   @State asking: boolean = false;
   private holder: LookHolder = new LookHolder();
-  private steps: string[] = ['welcome', 'how', 'name', 'goals', 'permissions', 'mode', 'ready'];
+  private steps: string[] = ['welcome', 'how', 'creature', 'name', 'goals', 'permissions', 'mode', 'ready'];
 
   aboutToAppear(): void {
     registerFonts(this.getUIContext());
@@ -53,14 +56,16 @@ struct Onboarding {
     this.replay = params !== undefined && params !== null && params.replay === true;
     if (this.replay) {
       // A replay keeps the user's data; choosing demo data here would overwrite it.
-      this.steps = ['welcome', 'how', 'name', 'goals', 'permissions', 'ready'];
+      this.steps = ['welcome', 'how', 'creature', 'name', 'goals', 'permissions', 'ready'];
       const p = AppModel.get().profile();
       this.name = p.name;
+      this.species = p.species;
       this.weekly = p.weeklyGoal;
       this.stepGoal = p.stepGoal;
     }
     const look = new CreatureLook();
-    look.hue = 14;
+    look.species = this.species;
+    look.hue = findSpecies(this.species).hueBase;
     look.mood = 'curious';
     look.smile = 0.6;
     look.bob = 0.7;
@@ -82,6 +87,23 @@ struct Onboarding {
       return true;
     }
     return false;
+  }
+
+  // Starter choice: the preview switches body and colours, and the suggested name follows
+  // the species while the user has not typed their own.
+  private pickSpecies(id: string): void {
+    const prev = findSpecies(this.species);
+    this.species = id;
+    const sp = findSpecies(id);
+    if (this.name === prev.name || this.name.trim().length === 0) {
+      this.name = sp.name;
+    }
+    const look = this.holder.look;
+    look.species = id;
+    look.hue = sp.hueBase;
+    this.holder.express('joy', 900);
+    this.holder.poke();
+    AppModel.get().tick(10);
   }
 
   private stepId(): string {
@@ -131,6 +153,7 @@ struct Onboarding {
     const model = AppModel.get();
     const p: Profile = model.profile();
     p.name = sanitizeName(this.name);
+    p.species = this.species;
     p.weeklyGoal = this.weekly;
     p.stepGoal = this.stepGoal;
     p.onboarded = true;
@@ -251,7 +274,7 @@ struct Onboarding {
     if (this.stepId() === 'welcome') {
       Column({ space: 8 }) {
         CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 290, tappable: true })
-        this.Title('Meet ' + (this.replay ? this.name : 'Wisp'),
+        this.Title(this.replay ? 'Meet ' + this.name + ' again' : 'Meet your training buddy',
           'A little creature that grows from your real training. Your phone counts the reps, you do the work.')
       }
       .transition(fx(STEP_FX))
@@ -266,6 +289,38 @@ struct Onboarding {
           'Train hard and it asks for a rest day. It is never sad and there are no streaks to lose.'))
       }
       .padding({ top: 24 })
+      .transition(fx(STEP_FX))
+    } else if (this.stepId() === 'creature') {
+      Column({ space: 14 }) {
+        CreatureCanvas({ holder: this.holder, label: '', canvasHeight: 200, tappable: true })
+        this.Title('Choose your creature', 'Three starters to pick from. More hatch as you train.')
+        Row({ space: 8 }) {
+          ForEach(STARTERS, (sp: Species) => {
+            Column({ space: 4 }) {
+              Text(sp.name)
+                .fontSize(15)
+                .fontFamily(F_BOLD)
+                .fontColor(this.species === sp.id ? ACCENT : TEXT)
+            }
+            .layoutWeight(1)
+            .height(48)
+            .justifyContent(FlexAlign.Center)
+            .borderRadius(24)
+            .backgroundColor(this.species === sp.id ? ACCENT_TINT : SURFACE_HI)
+            .border({ width: 1, color: this.species === sp.id ? '#66FF8A5B' : HAIRLINE })
+            .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.94 }))
+            .accessibilityText(sp.name + (this.species === sp.id ? ', selected' : ''))
+            .onClick(() => this.pickSpecies(sp.id))
+          }, (sp: Species) => sp.id)
+        }
+        .width('100%')
+        Text(findSpecies(this.species).blurb)
+          .fontSize(14)
+          .fontFamily(F_REG)
+          .fontColor(TEXT_DIM)
+          .width('100%')
+          .lineHeight(20)
+      }
       .transition(fx(STEP_FX))
     } else if (this.stepId() === 'name') {
       Column({ space: 18 }) {

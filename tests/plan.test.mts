@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { LifeEngine, LifeConfig } from '../.test-build/core/LifeEngine.ts';
-import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup } from '../.test-build/core/Plan.ts';
+import { nextAction, weekStats, summarize, startOfWeek, dayLabel, formatDuration, formatSteps, weakestGroup, records, levelFor } from '../.test-build/core/Plan.ts';
 import { moodInfo, MOODS } from '../.test-build/core/Mood.ts';
 import { Profile, ProfileStore, sanitizeName, reducedMotion } from '../.test-build/core/Profile.ts';
 import { MemoryStore } from '../.test-build/core/Store.ts';
@@ -186,4 +186,44 @@ test('profile: motion mode is validated and auto follows the renderer', () => {
   assert.equal(reducedMotion('auto', false), false);
   assert.equal(reducedMotion('full', true), false);
   assert.equal(reducedMotion('reduced', false), true);
+});
+
+test('profile: species is validated', () => {
+  const kv = new MemoryStore();
+  const store = new ProfileStore(kv);
+  assert.equal(store.load().species, 'wisp');
+  const p = new Profile(); p.species = 'pip'; store.save(p);
+  assert.equal(store.load().species, 'pip');
+  kv.put('profile.v1', JSON.stringify({ species: 'dragon' }));
+  assert.equal(store.load().species, 'wisp');
+});
+
+test('records: all-time totals, bests and favourite exercise', () => {
+  const a = workout(NOW - 2 * DAY, 'legs', 3, 8);                 // 24 reps, squat
+  const b = workout(NOW - DAY, 'push', 2, 12, 'press');           // 24 reps, press
+  b.sets.push(Object.assign(new SetRecord(), { exercise: 'squat', group: 'legs', reps: 15, endMs: NOW - DAY, startMs: NOW - DAY - 60000 }));
+  const empty = workout(NOW - DAY, 'legs', 1, 0);                 // no reps: not a session
+  const future = workout(NOW + DAY, 'legs', 5, 50);
+  const r = records([a, b, empty, future], NOW);
+  assert.equal(r.sessions, 2);
+  assert.equal(r.sets, 6);
+  assert.equal(r.reps, 63);
+  assert.equal(r.bestSet, 15);
+  assert.equal(r.bestSetExercise, 'Squat');
+  assert.equal(r.bestSession, 39);
+  assert.equal(r.favorite, 'Squat');
+  assert.equal(r.activeDays, 2);
+  assert.ok(r.longestMs >= 40 * 60000);
+});
+
+test('levels: cumulative XP, growing level size, never below 1', () => {
+  assert.equal(levelFor(0).level, 1);
+  assert.equal(levelFor(-5).level, 1);
+  assert.equal(levelFor(39).level, 1);
+  assert.equal(levelFor(40).level, 2);
+  assert.equal(levelFor(40).into, 0);
+  assert.equal(levelFor(40).need, 60);
+  assert.equal(levelFor(99).level, 2);
+  assert.equal(levelFor(100).level, 3);
+  assert.equal(levelFor(1000000).level, 99);
 });

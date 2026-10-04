@@ -58,6 +58,17 @@ struct Summary {
     this.getUIContext().getRouter().back();
   }
 
+  private unlockText(): string {
+    const parts: string[] = [];
+    if (this.summary.newSpecies.length > 0) {
+      parts.push(this.summary.newSpecies.join(', ') + ' joined your collection.');
+    }
+    if (this.summary.newBadges.length > 0) {
+      parts.push((this.summary.newBadges.length === 1 ? 'Badge: ' : 'Badges: ') + this.summary.newBadges.join(', ') + '.');
+    }
+    return parts.join(' ');
+  }
+
   private headline(): string {
     if (this.summary.gains.length === 0) {
       return 'Workout saved';
@@ -137,7 +148,7 @@ struct Summary {
               Row({ space: 8 }) {
                 this.Big(formatDuration(this.summary.durationMs), 'duration')
                 this.Big('' + this.summary.sets, this.summary.sets === 1 ? 'set' : 'sets')
-                this.Big('' + this.summary.reps, 'reps')
+                this.Big('' + this.summary.reps, 'reps = XP')
               }
               .width('100%')
               if (this.summary.cues > 0) {
@@ -148,6 +159,54 @@ struct Summary {
                   .fontColor(TEXT_MUTE)
                   .width('100%')
                   .margin({ top: 14 })
+              }
+            }
+          }
+
+          if (this.summary.levelAfter > this.summary.levelBefore) {
+            Reveal({ delay: STAGGER }) {
+              Tile({ pad: 18, highlight: true }) {
+                Row() {
+                  Column({ space: 3 }) {
+                    Text('Level up!').fontSize(17).fontFamily(F_BOLD).fontColor(TEXT)
+                    Text(this.name + ' reached level ' + this.summary.levelAfter + '. Every rep is experience.')
+                      .fontSize(13)
+                      .fontFamily(F_REG)
+                      .fontColor(TEXT_DIM)
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+                  Text('Lv ' + this.summary.levelAfter).fontSize(26).fontFamily(F_BOLD).fontColor(ACCENT)
+                }
+                .width('100%')
+              }
+            }
+          }
+
+          if (this.summary.newSpecies.length > 0 || this.summary.newBadges.length > 0) {
+            Reveal({ delay: STAGGER * 2 }) {
+              Tile({ pad: 18, highlight: true }) {
+                Row({ space: 14 }) {
+                  Image($r('app.media.ic_trophy_accent'))
+                    .width(44)
+                    .height(44)
+                    .padding(11)
+                    .borderRadius(22)
+                    .backgroundColor('#26FF8A5B')
+                  Column({ space: 3 }) {
+                    Text(this.summary.newSpecies.length > 0 ? 'New creature hatched!' : 'New badge earned!')
+                      .fontSize(17)
+                      .fontFamily(F_BOLD)
+                      .fontColor(TEXT)
+                    Text(this.unlockText())
+                      .fontSize(13)
+                      .fontFamily(F_REG)
+                      .fontColor(TEXT_DIM)
+                  }
+                  .alignItems(HorizontalAlign.Start)
+                  .layoutWeight(1)
+                }
+                .width('100%')
               }
             }
           }

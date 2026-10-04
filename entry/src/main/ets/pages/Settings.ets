@@ -1,6 +1,7 @@
 import { AppModel } from '../app/AppModel';
 import { NAME_MAX, Profile, reducedMotion, STEP_GOAL_MAX, STEP_GOAL_MIN, WEEKLY_GOAL_MAX, WEEKLY_GOAL_MIN, sanitizeName } from '../core/Profile';
 import { formatSteps } from '../core/Plan';
+import { findSpecies } from '../core/Species';
 import { Button56, IconButton, NavRow, SectionLabel, Tile } from '../ui/Kit';
 import { registerFonts } from '../ui/Fonts';
 import { RouteParams, navPush, navReplace } from '../ui/Nav';
@@ -283,11 +284,17 @@ struct Settings {
                 icon: $r('app.media.ic_edit'),
                 title: 'Name',
                 value: this.profile.name,
-                divider: false,
                 onTap: () => {
                   this.draftName = this.profile.name;
                   this.showName = true;
                 }
+              })
+              NavRow({
+                icon: $r('app.media.ic_trophy'),
+                title: 'Creatures and badges',
+                value: findSpecies(this.profile.species).name,
+                divider: false,
+                onTap: () => navPush(this.getUIContext(), 'pages/Collection')
               })
             }
             .padding({ left: 14, right: 14 })
