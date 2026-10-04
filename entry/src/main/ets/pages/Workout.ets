@@ -567,27 +567,37 @@ struct Workout {
         .fontColor(TEXT)
         .width('100%')
         .margin({ bottom: 8 })
-      Row({ space: 8 }) {
-        Column({ space: 2 }) {
-          Text(formatLoad(this.loadKg)).fontSize(22).fontFamily(F_BOLD).fontColor(this.loadKg > 0 ? TEXT : TEXT_DIM)
-          Text('load per rep (dumbbells: one hand)').fontSize(11).fontFamily(F_REG).fontColor(TEXT_MUTE)
-        }
-        .alignItems(HorizontalAlign.Start)
-        .layoutWeight(1)
-        ForEach([-5, -1, 1, 5], (d: number) => {
-          Text((d > 0 ? '+' : '−') + Math.abs(d === 1 || d === -1 ? 2.5 : 5))
-            .fontSize(13)
+      Column({ space: 10 }) {
+        Row() {
+          Column({ space: 2 }) {
+            Text('Load').fontSize(15).fontFamily(F_BOLD).fontColor(TEXT)
+            Text('per rep; dumbbells: one hand').fontSize(11).fontFamily(F_REG).fontColor(TEXT_MUTE)
+          }
+          .alignItems(HorizontalAlign.Start)
+          .layoutWeight(1)
+          Text(this.loadKg > 0 ? formatLoad(this.loadKg) : 'Bodyweight')
+            .fontSize(22)
             .fontFamily(F_BOLD)
-            .fontColor(TEXT)
-            .width(46)
-            .height(40)
-            .textAlign(TextAlign.Center)
-            .borderRadius(20)
-            .backgroundColor(SURFACE_HI)
-            .accessibilityText((d > 0 ? 'Add ' : 'Remove ') + Math.abs(d === 1 || d === -1 ? 2.5 : 5) + ' kilograms')
-            .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
-            .onClick(() => this.changeLoad(d === 1 || d === -1 ? d * 2.5 : d))
-        }, (d: number) => 'ld' + d)
+            .fontColor(this.loadKg > 0 ? TEXT : TEXT_DIM)
+        }
+        .width('100%')
+        Row({ space: 8 }) {
+          ForEach([-5, -2.5, 2.5, 5], (d: number) => {
+            Text((d > 0 ? '+' : '−') + Math.abs(d) + ' kg')
+              .fontSize(13)
+              .fontFamily(F_BOLD)
+              .fontColor(TEXT)
+              .height(40)
+              .layoutWeight(1)
+              .textAlign(TextAlign.Center)
+              .borderRadius(20)
+              .backgroundColor(SURFACE_HI)
+              .accessibilityText((d > 0 ? 'Add ' : 'Remove ') + Math.abs(d) + ' kilograms')
+              .clickEffect(press({ level: ClickEffectLevel.LIGHT, scale: 0.92 }))
+              .onClick(() => this.changeLoad(d))
+          }, (d: number) => 'ld' + d)
+        }
+        .width('100%')
       }
       .width('100%')
       .padding({ top: 4, bottom: 12 })
