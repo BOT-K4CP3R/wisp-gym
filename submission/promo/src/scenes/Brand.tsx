@@ -25,17 +25,10 @@ export const Hook: React.FC<{ dur: number }> = ({ dur }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame: frame - 2, fps, config: theme.spring.bouncy });
-  const halo = interpolate(frame, [0, fps * 1.2], [0.4, 1], { ...clamp, easing: theme.ease.out });
   return (
     <Stage>
       <SceneOut at={dur - theme.timing.exit - 0.05}>
         <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-          <div
-            style={{
-              position: "absolute", width: 900, height: 900, borderRadius: "50%", top: 30,
-              background: `radial-gradient(circle, ${theme.colors.glow}, transparent 60%)`, opacity: 0.55 * halo, filter: "blur(30px)",
-            }}
-          />
           <div style={{ transform: `translateY(${interpolate(p, [0, 1], [120, -40])}px) scale(${interpolate(p, [0, 1], [0.5, 1])})`, opacity: Math.min(p * 1.4, 1) }}>
             <Breathe amp={10} period={1.8}>
               <FaceSwap species="wisp" a="happy" b="joy" at={1.3} size={560} glow />
