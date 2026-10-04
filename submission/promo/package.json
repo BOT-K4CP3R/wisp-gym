@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Silent motion-graphics promo for Wisp Gym (Remotion)",
   "scripts": {
-    "assets": "mkdir -p public/shots && cp ../../docs/screenshots/*.jpg public/shots/ && cp ../../entry/src/main/resources/rawfile/fonts/Nunito-*.ttf public/ && NODE_PATH=${NODE_PATH:-$HOME/.wisp-gym-tools/node_modules} node scripts/creatures.mjs",
+    "assets": "mkdir -p public/shots && cp ../../docs/screenshots/*.jpg public/shots/ && cp ../../entry/src/main/resources/rawfile/fonts/Nunito-*.ttf public/ && cp ../../docs/app-icon.png public/logo.png && NODE_PATH=${NODE_PATH:-$HOME/.wisp-gym-tools/node_modules} node scripts/creatures.mjs",
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts WispPromo out/wisp-gym-promo.mp4 --codec h264 --crf 16 --muted"
   },

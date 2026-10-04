@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { Stage } from "../components/Layers";
-import { Breathe, Chip, Entrance, SceneOut, WordReveal } from "../components/Motion";
+import { BrandMark, Breathe, Chip, Entrance, SceneOut, WordReveal } from "../components/Motion";
 import { Phone } from "../components/Phone";
 import { theme } from "../theme";
 
@@ -31,6 +31,7 @@ export const Feature: React.FC<FeatureProps> = ({ dur, kicker, head, hi, sub, ch
   return (
     <Stage hue={hue}>
       <SceneOut at={out}>
+        <BrandMark />
         <AbsoluteFill style={{ padding: "0 140px", flexDirection: "row", alignItems: "center" }}>
           <div style={{ width: 860, display: "flex", flexDirection: "column", gap: 34 }}>
             <Entrance delay={0.05} y={24}>

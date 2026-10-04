@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { Stage } from "../components/Layers";
-import { Breathe, Counter, Creature, Entrance, SceneOut, WordReveal } from "../components/Motion";
+import { Breathe, Counter, Creature, Entrance, Logo, SceneOut, WordReveal } from "../components/Motion";
 import { theme } from "../theme";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -20,23 +20,24 @@ const FaceSwap: React.FC<{ species: string; a: string; b: string; at: number; si
   );
 };
 
-// HOOK: the creature pops in, smiles wider, the wordmark lands under it.
+// HOOK: the app icon pops in like a launch, then the wordmark and the promise land under it.
 export const Hook: React.FC<{ dur: number }> = ({ dur }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame: frame - 2, fps, config: theme.spring.bouncy });
+  const turn = interpolate(p, [0, 1], [-14, 0], clamp);
   return (
     <Stage>
       <SceneOut at={dur - theme.timing.exit - 0.05}>
         <AbsoluteFill style={{ alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-          <div style={{ transform: `translateY(${interpolate(p, [0, 1], [120, -40])}px) scale(${interpolate(p, [0, 1], [0.5, 1])})`, opacity: Math.min(p * 1.4, 1) }}>
-            <Breathe amp={10} period={1.8}>
-              <FaceSwap species="wisp" a="happy" b="joy" at={1.3} size={560} glow />
+          <div style={{ opacity: Math.min(p * 1.5, 1), transform: `translateY(${interpolate(p, [0, 1], [90, 0], clamp)}px) scale(${interpolate(p, [0, 1], [0.4, 1])}) rotate(${turn}deg)` }}>
+            <Breathe amp={7} period={2}>
+              <Logo size={360} />
             </Breathe>
           </div>
-          <div style={{ marginTop: -30, display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
-            <WordReveal text="Wisp Gym" delay={0.55} size={150} style={{ justifyContent: "center" }} />
-            <Entrance delay={1.25} y={22}>
+          <div style={{ marginTop: 56, display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
+            <WordReveal text="Wisp Gym" delay={0.5} size={150} style={{ justifyContent: "center" }} />
+            <Entrance delay={1.2} y={22}>
               <div style={{ fontFamily: theme.fonts.body, fontWeight: 500, fontSize: 42, color: theme.colors.textDim }}>
                 A creature that grows from your real training.
               </div>
@@ -187,7 +188,10 @@ export const CTA: React.FC<{ dur: number }> = ({ dur }) => {
         </div>
         <Entrance delay={1.2} y={24}>
           <div style={{ marginTop: 34, display: "flex", gap: 28, alignItems: "center", fontFamily: theme.fonts.body, fontSize: 34, color: theme.colors.textDim, fontWeight: 500 }}>
-            <span style={{ fontWeight: 800, color: theme.colors.text }}>Wisp Gym</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 16, fontWeight: 800, color: theme.colors.text }}>
+              <Logo size={64} />
+              Wisp Gym
+            </span>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: theme.colors.textMute }} />
             <span>OpenHarmony / HarmonyOS</span>
             <span style={{ width: 8, height: 8, borderRadius: 4, background: theme.colors.textMute }} />

@@ -139,3 +139,23 @@ export const Chip: React.FC<{ children: React.ReactNode; hero?: boolean }> = ({ 
     {children}
   </div>
 );
+
+// The app icon (docs/app-icon.png, rendered from the app's drawing code) as the logo.
+export const Logo: React.FC<{ size: number; style?: React.CSSProperties }> = ({ size, style }) => (
+  <Img
+    src={staticFile("logo.png")}
+    style={{ width: size, height: size, borderRadius: size * 0.22, border: `${Math.max(1, size / 160)}px solid ${theme.colors.hairline}`, boxSizing: "border-box", boxShadow: `0 ${size * 0.12}px ${size * 0.3}px -${size * 0.08}px rgba(0,0,0,0.8)`, ...style }}
+  />
+);
+
+// Small brand mark for the corner of feature scenes.
+export const BrandMark: React.FC<{ delay?: number }> = ({ delay = 0.1 }) => (
+  <div style={{ position: "absolute", top: 64, left: 140 }}>
+    <Entrance delay={delay} y={-16} spring="snappy">
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <Logo size={56} />
+        <span style={{ fontFamily: theme.fonts.display, fontWeight: 800, fontSize: 30, color: theme.colors.text, letterSpacing: "-0.01em" }}>Wisp Gym</span>
+      </div>
+    </Entrance>
+  </div>
+);
